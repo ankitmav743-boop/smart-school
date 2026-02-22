@@ -1,0 +1,29 @@
+﻿node : C:\Users\ankit\O
+neDrive\Desktop\project
+\server\index.js:112
+At line:1 char:1
++ node -c 
+server/index.js 2> 
+out.txt
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (C:\Users\anki   
+ t\...er\index.js:1    
+12:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+} catch (error) {
+^
+
+SyntaxError: missing ) 
+after argument list
+    at checkSyntax (nod
+e:internal/main/check_s
+yntax:72:5)
+
+Node.js v24.11.0
