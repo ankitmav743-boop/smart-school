@@ -162,7 +162,7 @@ export function ParentLogin({ onBack }: ParentLoginProps) {
           {/* Staggered form inputs */}
           <div className="space-y-5">
             {[
-              { label: "Student Name", value: studentName, set: setStudentName, placeholder: "Enter student name", type: "text", example: "Example: Geeta Joshi" },
+              { label: "Student Name", value: studentName, set: setStudentName, placeholder: "Enter student name", type: "text", example: "Example: Student 1001" },
               { label: "Class", value: classValue, set: setClassValue, placeholder: "e.g., 1st, 10th", type: "text", example: "Example: 1st" },
               { label: "SR Number", value: srNumber, set: setSrNumber, placeholder: "Enter SR number", type: "text", example: "Example: 1001" },
               { label: "Password", value: password, set: setPassword, placeholder: "Enter student password", type: "password", example: "" }
