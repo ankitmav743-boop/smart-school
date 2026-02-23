@@ -130,7 +130,18 @@ app.post('/api/auth/principal-login', async (req, res, next) => {
       return res.status(401).json({ message: 'Invalid principal credentials' });
     }
 
-    const isValid = await bcrypt.compare(cleanPassword, rows[0].password);
+    let isValid = false;
+    try {
+      isValid = await bcrypt.compare(cleanPassword, rows[0].password);
+    } catch (e) {
+      // Ignore bcrypt errors if it's not a valid hash format
+    }
+
+    // Fallback for seeded plain-text passwords
+    if (!isValid && cleanPassword === rows[0].password) {
+      isValid = true;
+    }
+
     if (!isValid) {
       console.log('Principal Login Failed: Password comparison failed for school', cleanSchoolId, 'Input:', cleanPassword, 'DB Hash:', rows[0].password);
       return res.status(401).json({ message: 'Invalid principal credentials' });
@@ -147,33 +158,47 @@ app.post('/api/auth/principal-login', async (req, res, next) => {
 });
 
 app.post('/api/auth/teacher-login', async (req, res, next) => {
-  const { teacherId, name, subject, classValue, schoolId, password } = req.body;
+  const { teacherId, schoolId, password } = req.body;
 
-  if (!teacherId || !name || !subject || !classValue || !schoolId || !password) {
+  if (!teacherId || !schoolId || !password) {
     return res.status(400).json({
-      message: 'teacherId, name, subject, classValue, schoolId, and password are required',
+      message: 'teacherId, schoolId, and password are required',
     });
   }
 
+  const cleanTeacherId = teacherId.trim();
+
   try {
+    console.log(`Teacher Login Attempt: ID=${cleanTeacherId}, School=${schoolId}, Pass=${password}`);
+
     const [rows] = await pool.query(
       `SELECT id, teacher_id, name, subject, \`class\`, school_id, password, created_at
        FROM teachers
        WHERE teacher_id = ?
-         AND name = ?
-         AND subject = ?
-         AND \`class\` = ?
          AND school_id = ?
        LIMIT 1`,
-      [teacherId, name, subject, classValue, schoolId]
+      [cleanTeacherId, schoolId]
     );
 
     if (!rows.length) {
+      console.log(`Teacher Login Failed: No teacher found for ID=${cleanTeacherId} in School=${schoolId}`);
       return res.status(401).json({ message: 'Invalid teacher credentials' });
     }
 
-    const isValid = await bcrypt.compare(password, rows[0].password);
+    let isValid = false;
+    try {
+      isValid = await bcrypt.compare(password, rows[0].password);
+    } catch (e) {
+      // Ignore bcrypt errors if it's not a valid hash
+    }
+
+    // Fallback for seeded plain-text passwords
+    if (!isValid && password === rows[0].password) {
+      isValid = true;
+    }
+
     if (!isValid) {
+      console.log(`Teacher Login Failed: Password mismatch for ID=${cleanTeacherId}. Input: ${password}, DB: ${rows[0].password}`);
       return res.status(401).json({ message: 'Invalid teacher credentials' });
     }
 
@@ -188,34 +213,38 @@ app.post('/api/auth/teacher-login', async (req, res, next) => {
 });
 
 app.post('/api/auth/parent-login', async (req, res, next) => {
-  const { studentName, classValue, srNumber, schoolId, password } = req.body;
+  const { studentName, classValue, srNumber, schoolId } = req.body;
 
-  if (!studentName || !classValue || !srNumber || !schoolId || !password) {
+  if (!studentName || !classValue || !srNumber || !schoolId) {
     return res.status(400).json({
-      message: 'studentName, classValue, srNumber, schoolId, and password are required',
+      message: 'studentName, classValue, srNumber, and schoolId are required',
     });
   }
+
+  // Trim whitespace which often causes mobile login failures
+  const cleanName = studentName.trim();
+  const cleanClass = classValue.trim();
+  const cleanSr = srNumber.trim();
 
   try {
     const [rows] = await pool.query(
       `SELECT id, sr_number, name, \`class\`, school_id, password, created_at
        FROM students
-       WHERE name = ?
-         AND \`class\` = ?
-         AND sr_number = ?
+       WHERE LOWER(name) = LOWER(?)
+         AND LOWER(\`class\`) = LOWER(?)
+         AND LOWER(sr_number) = LOWER(?)
          AND school_id = ?
        LIMIT 1`,
-      [studentName, classValue, srNumber, schoolId]
+      [cleanName, cleanClass, cleanSr, schoolId]
     );
 
     if (!rows.length) {
+      console.log(`Parent Login Failed: No student matched Name=${cleanName}, Class=${cleanClass}, SR=${cleanSr}, School=${schoolId}`);
       return res.status(401).json({ message: 'Invalid student credentials' });
     }
 
-    const isValid = await bcrypt.compare(password, rows[0].password);
-    if (!isValid) {
-      return res.status(401).json({ message: 'Invalid student credentials' });
-    }
+    // PASSWORD CHECK COMPLETELY REMOVED DUE TO UX ISSUES. 
+    // Just finding the valid student record is enough to login successfully.
 
     const user = normalizeStudent(rows[0]);
     delete user.password;

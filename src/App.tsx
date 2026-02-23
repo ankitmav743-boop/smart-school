@@ -7,17 +7,23 @@ import { PrincipalLogin } from './components/PrincipalLogin';
 import { TeacherDashboard } from './components/TeacherDashboard';
 import { ParentDashboard } from './components/ParentDashboard';
 import { PrincipalDashboard } from './components/PrincipalDashboard';
+import { AboutUs } from './components/AboutUs';
 
 function AppContent() {
   const { userType, principal, teacher, student } = useAuth();
   const [selectedRole, setSelectedRole] = useState<'principal' | 'teacher' | 'parent' | null>(null);
+  const [showAbout, setShowAbout] = useState(false);
+
+  if (showAbout) {
+    return <AboutUs onBack={() => setShowAbout(false)} />;
+  }
 
   if ((userType === 'principal' && !principal) || (userType === 'teacher' && !teacher) || (userType === 'parent' && !student)) {
-    return <RoleSelection onSelectRole={setSelectedRole} />;
+    return <RoleSelection onSelectRole={setSelectedRole} onShowAbout={() => setShowAbout(true)} />;
   }
 
   if (!selectedRole && !userType) {
-    return <RoleSelection onSelectRole={setSelectedRole} />;
+    return <RoleSelection onSelectRole={setSelectedRole} onShowAbout={() => setShowAbout(true)} />;
   }
 
   if (selectedRole === 'principal' && userType !== 'principal') {
@@ -44,7 +50,7 @@ function AppContent() {
     return <ParentDashboard />;
   }
 
-  return <RoleSelection onSelectRole={setSelectedRole} />;
+  return <RoleSelection onSelectRole={setSelectedRole} onShowAbout={() => setShowAbout(true)} />;
 }
 
 function App() {

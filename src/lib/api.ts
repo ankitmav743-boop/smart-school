@@ -87,9 +87,6 @@ export async function loginPrincipal(params: {
 
 export async function loginTeacher(params: {
   teacherId: string;
-  name: string;
-  subject: string;
-  classValue: string;
   schoolId: string;
   password?: string;
 }) {

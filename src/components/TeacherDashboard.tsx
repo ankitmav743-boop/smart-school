@@ -1,81 +1,84 @@
 import { useCallback, useEffect, useState } from 'react';
-import { BookOpen, ClipboardList, Calendar, TrendingUp, LogOut, Plus } from 'lucide-react';
+import { LogOut, ArrowLeft, Users, BookOpen, Star, Send, LayoutDashboard } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import {
-  createExamTimetable,
-  createHomework,
-  createMark,
-  getExamTimetableByClass,
-  getHomeworkByClass,
-  getMarksByStudentIds,
-  getStudents,
-} from '../lib/api';
-import { ExamTimetable, Homework, MarkWithStudentName, Student } from '../lib/types';
+import { createHomework, createMark, getMarksByStudentIds, getStudents } from '../lib/api';
+import { MarkWithStudentName, Student } from '../lib/types';
+
+const CLASSES = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
+
+// Framer Variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.1 } }
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
 
 export function TeacherDashboard() {
   const { teacher, school, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'marks' | 'homework' | 'timetable' | 'performance'>(
-    'marks'
-  );
+  const [selectedClass, setSelectedClass] = useState<string>('');
   const [students, setStudents] = useState<Student[]>([]);
   const [marks, setMarks] = useState<MarkWithStudentName[]>([]);
-  const [homeworkList, setHomeworkList] = useState<Homework[]>([]);
-  const [timetables, setTimetables] = useState<ExamTimetable[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [newMark, setNewMark] = useState({
-    student_id: '',
-    subject: teacher?.subject || '',
-    marks: '',
-    total_marks: '100',
-    exam_type: 'First Test',
-  });
+  // Homework state
+  const [homeworkDescription, setHomeworkDescription] = useState('');
+  const [homeworkDueDate, setHomeworkDueDate] = useState('');
 
-  const [newHomework, setNewHomework] = useState({
-    subject: teacher?.subject || '',
-    class: teacher?.class || '',
-    description: '',
-    due_date: '',
-  });
-
-  const [newTimetable, setNewTimetable] = useState({
-    class: teacher?.class || '',
-    subject: teacher?.subject || '',
-    exam_date: '',
-    exam_time: '',
-    exam_type: 'First Test',
-  });
+  // Mark/Eval Modal state
+  const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
+  const [modalType, setModalType] = useState<'Marks' | 'Weekly'>('Marks');
+  const [markValue, setMarkValue] = useState('');
+  const [totalMarks, setTotalMarks] = useState('100');
+  const [examType, setExamType] = useState('First Test');
 
   const loadData = useCallback(async () => {
-    if (!teacher || !school) {
-      return;
-    }
-
+    if (!teacher || !school || !selectedClass) return;
     setLoading(true);
     try {
-      const studentsData = await getStudents(school.id, teacher.class);
+      const studentsData = await getStudents(school.id, selectedClass);
       setStudents(studentsData || []);
-
-      if (activeTab === 'marks' || activeTab === 'performance') {
-        const marksData = await getMarksByStudentIds(studentsData.map((student) => student.id));
+      if (studentsData && studentsData.length > 0) {
+        const marksData = await getMarksByStudentIds(studentsData.map((s) => s.id));
         setMarks(marksData || []);
-      } else if (activeTab === 'homework') {
-        const homeworkData = await getHomeworkByClass(school.id, teacher.class);
-        setHomeworkList(homeworkData || []);
-      } else if (activeTab === 'timetable') {
-        const timetableData = await getExamTimetableByClass(school.id, teacher.class);
-        setTimetables(timetableData || []);
+      } else {
+        setMarks([]);
       }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
-  }, [activeTab, school, teacher]);
+  }, [school, teacher, selectedClass]);
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    if (selectedClass) void loadData();
+  }, [selectedClass, loadData]);
+
+  const handleAddHomework = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!school || !teacher || !selectedClass) return;
+    try {
+      await createHomework({
+        school_id: school.id,
+        subject: teacher.subject || 'General',
+        class: selectedClass,
+        description: homeworkDescription,
+        due_date: homeworkDueDate,
+        teacher_id: teacher.id,
+      });
+      setHomeworkDescription('');
+      setHomeworkDueDate('');
+      alert('Homework assigned to the entire class successfully!');
+    } catch (error) {
+      console.error('Error adding homework:', error);
+      alert('Failed to assign homework');
+    }
+  };
 
   const calculateGrade = (marksValue: number, total: number) => {
     const percentage = (marksValue / total) * 100;
@@ -84,529 +87,206 @@ export function TeacherDashboard() {
     return 'Weak';
   };
 
-  const handleAddMark = async (e: React.FormEvent) => {
+  const handleSubmitMark = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (!activeStudentId || !teacher) return;
     try {
-      const grade = calculateGrade(Number(newMark.marks), Number(newMark.total_marks));
+      const m = Number(markValue);
+      const t = modalType === 'Weekly' ? 10 : Number(totalMarks);
       await createMark({
-        student_id: newMark.student_id,
-        subject: newMark.subject,
-        marks: Number(newMark.marks),
-        total_marks: Number(newMark.total_marks),
-        grade,
-        exam_type: newMark.exam_type,
+        student_id: activeStudentId,
+        subject: teacher.subject || 'General',
+        marks: m,
+        total_marks: t,
+        grade: calculateGrade(m, t),
+        exam_type: modalType === 'Weekly' ? 'Weekly Evaluation' : examType,
       });
-
-      setNewMark({
-        student_id: '',
-        subject: teacher?.subject || '',
-        marks: '',
-        total_marks: '100',
-        exam_type: 'Unit Test',
-      });
+      setActiveStudentId(null);
       await loadData();
     } catch (error) {
       console.error('Error adding marks:', error);
+      alert('Failed to add evaluation');
     }
   };
 
-  const handleAddHomework = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!school || !teacher) return;
-
-    try {
-      await createHomework({
-        school_id: school.id,
-        subject: newHomework.subject,
-        class: newHomework.class,
-        description: newHomework.description,
-        due_date: newHomework.due_date,
-        teacher_id: teacher.id,
-      });
-
-      setNewHomework({
-        subject: teacher.subject || '',
-        class: teacher.class || '',
-        description: '',
-        due_date: '',
-      });
-      await loadData();
-    } catch (error) {
-      console.error('Error adding homework:', error);
-    }
-  };
-
-  const handleAddTimetable = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!school || !teacher) return;
-
-    try {
-      await createExamTimetable({
-        school_id: school.id,
-        class: newTimetable.class,
-        subject: newTimetable.subject,
-        exam_date: newTimetable.exam_date,
-        exam_time: newTimetable.exam_time,
-        exam_type: newTimetable.exam_type,
-      });
-
-      setNewTimetable({
-        class: teacher.class || '',
-        subject: teacher.subject || '',
-        exam_date: '',
-        exam_time: '',
-        exam_type: 'Unit Test',
-      });
-      await loadData();
-    } catch (error) {
-      console.error('Error adding timetable:', error);
-    }
-  };
-
-  const getGradeColor = (grade: string) => {
-    if (grade === 'Good') return 'bg-green-500';
-    if (grade === 'Average') return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  if (!teacher || !school) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="bg-white border border-orange-200 rounded-lg shadow p-6 max-w-md text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Session Missing</h2>
-          <p className="text-gray-700">
-            Teacher session load nahi hui. Please dubara login karein.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (!teacher || !school) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-orange-600 text-white p-6 shadow-lg">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Teacher Panel</h1>
-            <p className="text-orange-100 mt-1">
-              {teacher.name} - {teacher.subject} - {teacher.class}
-            </p>
-            <p className="text-orange-100 text-sm">{school.school_name}</p>
+    <div className="min-h-screen bg-slate-50 font-sans selection:bg-blue-200">
+
+      {/* Sticky Premium Header */}
+      <motion.header
+        initial={{ y: -100 }} animate={{ y: 0 }} transition={{ type: "spring", stiffness: 100, damping: 20 }}
+        className="sticky top-0 z-40 bg-slate-900 text-white shadow-xl border-b border-slate-800"
+      >
+        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center transform rotate-3">
+              <LayoutDashboard className="w-5 h-5 text-white transform -rotate-3" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black">{teacher.name}</h1>
+              <p className="text-xs font-bold text-blue-400 tracking-wider uppercase">{teacher.subject}</p>
+            </div>
           </div>
-          <button
-            onClick={logout}
-            className="flex items-center gap-2 bg-orange-700 hover:bg-orange-800 px-4 py-2 rounded-lg transition"
-          >
-            <LogOut className="w-5 h-5" />
-            Logout
+          <button onClick={logout} className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl transition font-bold text-sm">
+            <LogOut className="w-4 h-4" /> Logout
           </button>
         </div>
-      </header>
+      </motion.header>
 
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-md mb-6">
-          <div className="flex border-b">
-            <button
-              onClick={() => setActiveTab('marks')}
-              className={`flex items-center gap-2 px-6 py-4 font-semibold transition ${activeTab === 'marks'
-                ? 'border-b-2 border-orange-600 text-orange-600'
-                : 'text-gray-600 hover:text-gray-800'
-                }`}
-            >
-              <BookOpen className="w-5 h-5" />
-              Add Marks
-            </button>
-            <button
-              onClick={() => setActiveTab('homework')}
-              className={`flex items-center gap-2 px-6 py-4 font-semibold transition ${activeTab === 'homework'
-                ? 'border-b-2 border-orange-600 text-orange-600'
-                : 'text-gray-600 hover:text-gray-800'
-                }`}
-            >
-              <ClipboardList className="w-5 h-5" />
-              Homework
-            </button>
-            <button
-              onClick={() => setActiveTab('timetable')}
-              className={`flex items-center gap-2 px-6 py-4 font-semibold transition ${activeTab === 'timetable'
-                ? 'border-b-2 border-orange-600 text-orange-600'
-                : 'text-gray-600 hover:text-gray-800'
-                }`}
-            >
-              <Calendar className="w-5 h-5" />
-              Exam Timetable
-            </button>
-            <button
-              onClick={() => setActiveTab('performance')}
-              className={`flex items-center gap-2 px-6 py-4 font-semibold transition ${activeTab === 'performance'
-                ? 'border-b-2 border-orange-600 text-orange-600'
-                : 'text-gray-600 hover:text-gray-800'
-                }`}
-            >
-              <TrendingUp className="w-5 h-5" />
-              Student Performance
-            </button>
-          </div>
-        </div>
-
-        {loading && (
-          <div className="bg-orange-50 border border-orange-200 text-orange-700 rounded-lg px-4 py-3 mb-6">
-            Loading data...
-          </div>
-        )}
-
-        {activeTab === 'marks' && (
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Add New Marks
-              </h2>
-              <form onSubmit={handleAddMark} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Student</label>
-                  <select
-                    value={newMark.student_id}
-                    onChange={(e) => setNewMark({ ...newMark, student_id: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                    required
-                  >
-                    <option value="">Select Student</option>
-                    {students.map((student) => (
-                      <option key={student.id} value={student.id}>
-                        {student.name} (SR: {student.sr_number})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Subject</label>
-                  <input
-                    type="text"
-                    value={newMark.subject}
-                    onChange={(e) => setNewMark({ ...newMark, subject: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Marks</label>
-                    <input
-                      type="number"
-                      value={newMark.marks}
-                      onChange={(e) => setNewMark({ ...newMark, marks: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Total Marks</label>
-                    <input
-                      type="number"
-                      value={newMark.total_marks}
-                      onChange={(e) => setNewMark({ ...newMark, total_marks: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Exam Type</label>
-                  <select
-                    value={newMark.exam_type}
-                    onChange={(e) => setNewMark({ ...newMark, exam_type: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                    required
-                  >
-                    <option value="First Test">First Test</option>
-                    <option value="Second Test">Second Test</option>
-                    <option value="Third Test">Third Test</option>
-                    <option value="Half Yearly Exam">Half Yearly Exam</option>
-                    <option value="Yearly Exam">Yearly Exam</option>
-                    <option value="Today Class Test">Today Class Test</option>
-                  </select>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition"
-                >
-                  Add Marks
-                </button>
-              </form>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4">Recent Marks</h2>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {marks.map((mark) => (
-                  <div key={mark.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-semibold">{mark.student_name}</p>
-                        <p className="text-sm text-gray-600">{mark.subject}</p>
-                      </div>
-                      <span
-                        className={`${getGradeColor(
-                          mark.grade
-                        )} text-white px-3 py-1 rounded-full text-sm font-semibold`}
-                      >
-                        {mark.grade}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>
-                        Marks: {mark.marks}/{mark.total_marks}
-                      </span>
-                      <span className="text-gray-600">{mark.exam_type}</span>
-                    </div>
-                  </div>
-                ))}
+      <main className="max-w-7xl mx-auto p-6 md:p-8">
+        <AnimatePresence mode="wait">
+          {!selectedClass ? (
+            <motion.div key="class-selection" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <div className="mb-8">
+                <h2 className="text-3xl font-black text-slate-800 mb-2">Class Directory</h2>
+                <p className="text-slate-500 font-medium">Select a class to manage records and assignments.</p>
               </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'homework' && (
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Add Homework
-              </h2>
-              <form onSubmit={handleAddHomework} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Subject</label>
-                  <input
-                    type="text"
-                    value={newHomework.subject}
-                    onChange={(e) => setNewHomework({ ...newHomework, subject: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Class</label>
-                  <input
-                    type="text"
-                    value={newHomework.class}
-                    onChange={(e) => setNewHomework({ ...newHomework, class: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Description</label>
-                  <textarea
-                    value={newHomework.description}
-                    onChange={(e) =>
-                      setNewHomework({ ...newHomework, description: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                    rows={4}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Due Date</label>
-                  <input
-                    type="date"
-                    value={newHomework.due_date}
-                    onChange={(e) => setNewHomework({ ...newHomework, due_date: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition"
-                >
-                  Add Homework
-                </button>
-              </form>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4">Homework List</h2>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {homeworkList.map((hw) => (
-                  <div key={hw.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-semibold">{hw.subject}</p>
-                        <p className="text-sm text-gray-600">Class: {hw.class}</p>
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        Due: {new Date(hw.due_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-700">{hw.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'timetable' && (
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Add Exam Timetable
-              </h2>
-              <form onSubmit={handleAddTimetable} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Class</label>
-                  <input
-                    type="text"
-                    value={newTimetable.class}
-                    onChange={(e) => setNewTimetable({ ...newTimetable, class: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Subject</label>
-                  <input
-                    type="text"
-                    value={newTimetable.subject}
-                    onChange={(e) =>
-                      setNewTimetable({ ...newTimetable, subject: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Exam Date</label>
-                  <input
-                    type="date"
-                    value={newTimetable.exam_date}
-                    onChange={(e) =>
-                      setNewTimetable({ ...newTimetable, exam_date: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Exam Time</label>
-                  <input
-                    type="time"
-                    value={newTimetable.exam_time}
-                    onChange={(e) =>
-                      setNewTimetable({ ...newTimetable, exam_time: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Exam Type</label>
-                  <select
-                    value={newTimetable.exam_type}
-                    onChange={(e) =>
-                      setNewTimetable({ ...newTimetable, exam_type: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                    required
+              <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                {CLASSES.map((cls) => (
+                  <motion.button
+                    variants={cardVariants}
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    whileTap={{ scale: 0.95 }}
+                    key={cls}
+                    onClick={() => setSelectedClass(cls)}
+                    className="bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-100 p-6 flex flex-col items-center gap-4 transition-all group relative overflow-hidden"
                   >
-                    <option value="First Test">First Test</option>
-                    <option value="Second Test">Second Test</option>
-                    <option value="Third Test">Third Test</option>
-                    <option value="Half Yearly Exam">Half Yearly Exam</option>
-                    <option value="Yearly Exam">Yearly Exam</option>
-                    <option value="Today Class Test">Today Class Test</option>
-                  </select>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition"
-                >
-                  Add to Timetable
-                </button>
-              </form>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4">Exam Schedule</h2>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {timetables.map((tt) => (
-                  <div key={tt.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-semibold">{tt.subject}</p>
-                        <p className="text-sm text-gray-600">Class: {tt.class}</p>
-                      </div>
-                      <span className="text-sm font-semibold text-orange-600">{tt.exam_type}</span>
+                    <div className="absolute top-0 w-full h-1 bg-blue-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+                    <div className="bg-slate-50 p-4 rounded-xl group-hover:bg-blue-50 transition-colors">
+                      <Users className="w-8 h-8 text-slate-400 group-hover:text-blue-500 transition-colors" />
                     </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                      <span>{new Date(tt.exam_date).toLocaleDateString()}</span>
-                      <span>{tt.exam_time}</span>
-                    </div>
-                  </div>
+                    <span className="text-lg font-black text-slate-700">Class {cls}</span>
+                  </motion.button>
                 ))}
-              </div>
-            </div>
-          </div>
-        )}
+              </motion.div>
+            </motion.div>
+          ) : (
+            <motion.div key="dashboard" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
 
-        {activeTab === 'performance' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Student Performance</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                      Student Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                      Subject
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                      Performance
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                      Average
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <button onClick={() => setSelectedClass('')} className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 hover:text-blue-600 transition-colors">
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <h2 className="text-3xl font-black text-slate-800">Class {selectedClass} Dashboard</h2>
+                </div>
+              </div>
+
+              {/* Homework Form - Parallax Card Style */}
+              <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 mb-8 relative overflow-hidden">
+                <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-50 rounded-full blur-3xl" />
+                <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2 relative z-10">
+                  <Send className="w-5 h-5 text-blue-500" /> Dispatch Homework
+                </h3>
+                <form onSubmit={handleAddHomework} className="flex flex-col md:flex-row gap-4 relative z-10">
+                  <input
+                    type="text" placeholder="Add descriptive homework details..."
+                    value={homeworkDescription} onChange={(e) => setHomeworkDescription(e.target.value)}
+                    className="flex-1 px-5 py-3 border-2 border-slate-100 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none font-medium bg-slate-50" required
+                  />
+                  <input
+                    type="date" value={homeworkDueDate} onChange={(e) => setHomeworkDueDate(e.target.value)}
+                    className="px-5 py-3 border-2 border-slate-100 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none font-medium bg-slate-50" required
+                  />
+                  <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group">
+                    <span className="relative z-10">Assign</span>
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform" />
+                  </button>
+                </form>
+              </div>
+
+              <h3 className="text-xl font-black text-slate-800 mb-6">Student Roster ({students.length})</h3>
+
+              {loading ? (
+                <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
+              ) : (
+                <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid lg:grid-cols-2 gap-6">
                   {students.map((student) => {
-                    const studentMarks = marks.filter((m) => m.student_id === student.id);
-                    const avgMarks = studentMarks.length
-                      ? studentMarks.reduce((acc, m) => acc + (m.marks / m.total_marks) * 100, 0) /
-                      studentMarks.length
-                      : 0;
-                    const performance =
-                      avgMarks >= 75 ? 'Good' : avgMarks >= 50 ? 'Average' : 'Weak';
-
+                    const studentMarks = marks.filter((m) => m.student_id === student.id).slice(0, 3);
                     return (
-                      <tr key={student.id}>
-                        <td className="px-6 py-4 text-sm">{student.name}</td>
-                        <td className="px-6 py-4 text-sm">{teacher.subject}</td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`${getGradeColor(
-                              performance
-                            )} text-white px-3 py-1 rounded-full text-sm font-semibold`}
-                          >
-                            {performance}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-semibold">{avgMarks.toFixed(1)}%</td>
-                      </tr>
-                    );
+                      <motion.div variants={cardVariants} key={student.id} className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-xl transition-shadow flex flex-col">
+                        <div className="flex justify-between items-start mb-6">
+                          <div>
+                            <h4 className="font-black text-xl text-slate-800 mb-1">{student.name}</h4>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-md">SR: {student.sr_number}</span>
+                          </div>
+                          <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 font-black text-lg">
+                            {student.name.charAt(0)}
+                          </div>
+                        </div>
+
+                        <div className="flex-grow mb-6 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                          <p className="text-xs font-bold text-slate-400 tracking-wider uppercase mb-3">Recent Grades</p>
+                          {studentMarks.length > 0 ? (
+                            <div className="space-y-3">
+                              {studentMarks.map((m) => (
+                                <div key={m.id} className="flex justify-between items-center bg-white p-2 rounded-xl shadow-sm">
+                                  <span className="font-bold text-slate-600 text-sm truncate mr-4">{m.exam_type}</span>
+                                  <span className="font-black text-slate-800 text-sm bg-slate-100 px-2 py-1 rounded-lg">{m.marks}/{m.total_marks}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : <p className="text-sm font-medium text-slate-400 italic">No grade records.</p>}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mt-auto">
+                          <button onClick={() => { setActiveStudentId(student.id); setModalType('Marks'); setMarkValue(''); setTotalMarks('100'); }} className="flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-bold py-3 rounded-xl transition-colors">
+                            <BookOpen className="w-4 h-4" /> Exam Mark
+                          </button>
+                          <button onClick={() => { setActiveStudentId(student.id); setModalType('Weekly'); setMarkValue(''); }} className="flex items-center justify-center gap-2 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold py-3 rounded-xl transition-colors">
+                            <Star className="w-4 h-4" /> Weekly Eval
+                          </button>
+                        </div>
+                      </motion.div>
+                    )
                   })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal */}
+        <AnimatePresence>
+          {activeStudentId && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl">
+                <h3 className="text-2xl font-black text-slate-800 mb-6 flex items-center gap-3">
+                  {modalType === 'Marks' ? <><BookOpen className="text-indigo-500" /> Log Exam Mark</> : <><Star className="text-emerald-500" /> Weekly Rating</>}
+                </h3>
+                <form onSubmit={handleSubmitMark} className="space-y-5">
+                  {modalType === 'Marks' && (
+                    <div>
+                      <label className="block text-sm font-bold text-slate-600 mb-2">Exam Type</label>
+                      <select value={examType} onChange={(e) => setExamType(e.target.value)} className="w-full px-4 py-4 border-2 border-slate-200 rounded-xl outline-none font-bold bg-slate-50">
+                        <option value="First Test">First Test</option><option value="Half Yearly Exam">Half Yearly</option><option value="Yearly Exam">Finals</option>
+                      </select>
+                    </div>
+                  )}
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-bold text-slate-600 mb-2">{modalType === 'Weekly' ? 'Rating (/10)' : 'Score'}</label>
+                      <input type="number" value={markValue} onChange={(e) => setMarkValue(e.target.value)} className="w-full px-4 py-4 border-2 border-slate-200 rounded-xl outline-none font-black text-xl text-center" required />
+                    </div>
+                    {modalType === 'Marks' && (
+                      <div className="flex-1">
+                        <label className="block text-sm font-bold text-slate-600 mb-2">Total</label>
+                        <input type="number" value={totalMarks} onChange={(e) => setTotalMarks(e.target.value)} className="w-full px-4 py-4 border-2 border-slate-200 rounded-xl outline-none font-black text-xl text-center bg-slate-50" required />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onClick={() => setActiveStudentId(null)} className="flex-1 py-4 font-bold text-slate-500 hover:bg-slate-50 rounded-xl">Cancel</button>
+                    <button type="submit" className={`flex-1 py-4 font-bold text-white rounded-xl shadow-lg ${modalType === 'Marks' ? 'bg-indigo-600' : 'bg-emerald-500'}`}>Save Record</button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
     </div>
   );
 }

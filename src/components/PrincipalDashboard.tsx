@@ -2,47 +2,48 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { LogOut, Users, BookOpen, GraduationCap, ArrowLeft, BarChart2, Building2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getStudents, getMarksByStudentIds, Student, MarkWithStudentName } from '../lib/api';
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
 
 export function PrincipalDashboard() {
     const { principal, logout } = useAuth();
-
-    // We'll hardcode the standard 1st to 12th classes conceptually, or derived from data.
-    // For this hackathon, we assume 1st through 12th depending on the school config.
     const classes = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
 
     const [selectedClass, setSelectedClass] = useState<string | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
     const [marks, setMarks] = useState<MarkWithStudentName[]>([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
 
-    // Fetch student and mark data when a class is clicked
     useEffect(() => {
         async function loadClassData() {
             if (!principal || !selectedClass) return;
-
             setLoading(true);
-            setError('');
             try {
                 const classStudents = await getStudents(principal.id, selectedClass);
                 setStudents(classStudents);
-
                 if (classStudents.length > 0) {
                     const studentIds = classStudents.map(s => s.id);
                     const classMarks = await getMarksByStudentIds(studentIds);
                     setMarks(classMarks);
                 } else {
-                    setMarks([]); // no students means no marks
+                    setMarks([]);
                 }
             } catch (err) {
-                setError('Failed to load class data');
-                console.error(err);
+                console.error('Failed to load class data', err);
             } finally {
                 setLoading(false);
             }
         }
-
         loadClassData();
     }, [principal, selectedClass]);
 
@@ -61,205 +62,187 @@ export function PrincipalDashboard() {
         }));
     };
 
-    // View: Selecting a class
     if (!selectedClass) {
         return (
-            <div className="min-h-screen bg-gray-50">
-                <nav className="bg-indigo-600 text-white shadow-lg">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex justify-between h-16 items-center">
-                            <div className="flex items-center gap-2">
-                                <Building2 className="w-8 h-8" />
-                                <div>
-                                    <h1 className="font-bold text-xl">Principal Dashboard</h1>
-                                    <p className="text-sm text-indigo-200">{principal?.school_name}</p>
-                                </div>
+            <div className="min-h-screen bg-[#faf5ff] selection:bg-purple-200 font-sans">
+                <nav className="bg-white/80 backdrop-blur-xl border-b border-purple-100 shadow-sm sticky top-0 z-40">
+                    <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-purple-600 p-2.5 rounded-xl shadow-lg shadow-purple-200">
+                                <Building2 className="w-6 h-6 text-white" />
                             </div>
-                            <button
-                                onClick={logout}
-                                className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-700 rounded-lg transition"
-                            >
-                                <LogOut className="w-5 h-5" />
-                                <span className="hidden sm:inline">Logout</span>
-                            </button>
+                            <div>
+                                <h1 className="font-black text-xl text-slate-800">Principal Directory</h1>
+                                <p className="text-xs font-bold text-purple-600 uppercase tracking-wider">{principal?.school_name}</p>
+                            </div>
                         </div>
+                        <button onClick={logout} className="flex items-center gap-2 bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-600 px-4 py-2.5 rounded-xl font-bold transition-colors">
+                            <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Sign Out</span>
+                        </button>
                     </div>
                 </nav>
 
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="mb-8 animate-[fade-in-down_0.5s_ease-out]">
-                        <h2 className="text-2xl font-bold text-gray-800">Class Overview</h2>
-                        <p className="text-gray-600">Select a class to view detailed student analytics.</p>
-                    </div>
+                <main className="max-w-7xl mx-auto px-6 py-12 relative">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-purple-200/50 rounded-full blur-[100px] pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-fuchsia-200/40 rounded-full blur-[100px] pointer-events-none" />
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-[fade-in-up_0.8s_ease-out]">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center relative z-10">
+                        <h2 className="text-4xl font-black text-slate-800 mb-2">School Demographics</h2>
+                        <p className="text-slate-500 font-medium">Select a class to view deep student analytics and roster performance.</p>
+                    </motion.div>
+
+                    <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 relative z-10">
                         {classes.map((className) => (
-                            <button
+                            <motion.button
+                                variants={itemVariants}
+                                whileHover={{ scale: 1.05, y: -5 }}
+                                whileTap={{ scale: 0.95 }}
                                 key={className}
                                 onClick={() => setSelectedClass(className)}
-                                className="group bg-white p-6 rounded-2xl shadow-md hover:shadow-xl border-t-4 border-indigo-500 flex flex-col items-center justify-center transition-all duration-300 transform hover:-translate-y-1"
+                                className="group bg-white p-8 rounded-3xl shadow-sm hover:shadow-[0_20px_40px_rgba(147,51,234,0.1)] border border-purple-50 flex flex-col items-center justify-center transition-all duration-300"
                             >
-                                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-indigo-100 transition-all duration-300">
-                                    <Users className="w-8 h-8 text-indigo-600" />
+                                <div className="w-20 h-20 bg-purple-50 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300 group-hover:rotate-6 text-purple-600">
+                                    <Users className="w-10 h-10 transition-colors" />
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">Class {className}</h3>
-                                <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
-                                    <BarChart2 className="w-4 h-4" /> View Analytics
-                                </p>
-                            </button>
+                                <h3 className="text-2xl font-black text-slate-800 group-hover:text-purple-700 transition-colors">Class {className}</h3>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">View Data</p>
+                            </motion.button>
                         ))}
-                    </div>
+                    </motion.div>
                 </main>
             </div>
         );
     }
 
-    // View: Detailed Class Analytics
     return (
-        <div className="min-h-screen bg-gray-50">
-            <nav className="bg-indigo-600 text-white shadow-lg">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16 items-center">
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => setSelectedClass(null)} className="p-2 hover:bg-indigo-700 rounded-full transition">
-                                <ArrowLeft className="w-6 h-6" />
-                            </button>
-                            <div>
-                                <h1 className="font-bold text-xl">Class {selectedClass} Analytics</h1>
-                                <p className="text-sm text-indigo-200">{principal?.school_name}</p>
-                            </div>
+        <div className="min-h-screen bg-[#faf5ff] selection:bg-purple-200 font-sans">
+            <nav className="bg-white/80 backdrop-blur-xl border-b border-purple-100 shadow-sm sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <motion.button whileHover={{ x: -2 }} whileTap={{ scale: 0.95 }} onClick={() => setSelectedClass(null)} className="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors">
+                            <ArrowLeft className="w-5 h-5" />
+                        </motion.button>
+                        <div>
+                            <h1 className="font-black text-xl text-slate-800">Class {selectedClass} Protocol</h1>
+                            <p className="text-xs font-bold text-purple-600 uppercase tracking-wider">{principal?.school_name}</p>
                         </div>
-                        <button
-                            onClick={logout}
-                            className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-700 rounded-lg transition"
-                        >
-                            <LogOut className="w-5 h-5" />
-                            <span className="hidden sm:inline">Logout</span>
-                        </button>
                     </div>
                 </div>
             </nav>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="max-w-7xl mx-auto px-6 py-8">
                 {loading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                    <div className="flex justify-center items-center h-[60vh]">
+                        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-16 h-16 border-4 border-purple-100 border-t-purple-600 rounded-full" />
                     </div>
-                ) : error ? (
-                    <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-6 shadow-sm">{error}</div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <AnimatePresence mode="wait">
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                        {/* Student Roster */}
-                        <div className="lg:col-span-1 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 animate-[fade-in-up_0.5s_ease-out]">
-                            <div className="bg-indigo-50 p-6 border-b border-indigo-100 flex items-center justify-between">
-                                <h2 className="text-lg font-bold text-indigo-900 flex items-center gap-2">
-                                    <Users className="w-5 h-5" /> Student Roster
-                                </h2>
-                                <span className="bg-white text-indigo-700 px-3 py-1 rounded-full text-sm font-bold shadow-sm">
-                                    {students.length} Total
-                                </span>
-                            </div>
-                            <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
-                                {students.length === 0 ? (
-                                    <p className="p-6 text-gray-500 text-center">No students registered in this class.</p>
-                                ) : (
-                                    students.map(student => (
-                                        <div key={student.id} className="p-4 hover:bg-gray-50 transition cursor-pointer flex justify-between items-center group">
-                                            <div>
-                                                <p className="font-bold text-gray-800 group-hover:text-indigo-600 transition">{student.name}</p>
-                                                <p className="text-sm text-gray-500">SR: {student.sr_number}</p>
-                                            </div>
-                                            <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-600 transition">
-                                                <GraduationCap className="h-4 w-4 text-indigo-600 group-hover:text-white" />
-                                            </div>
+                            {/* Student Roster (Left Rail) */}
+                            <motion.div variants={itemVariants} className="lg:col-span-1 bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden border border-purple-50 flex flex-col h-[600px]">
+                                <div className="bg-purple-50/50 p-6 border-b border-purple-100 flex items-center justify-between">
+                                    <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                                        <Users className="w-5 h-5 text-purple-600" /> Administrative Roster
+                                    </h2>
+                                    <span className="bg-white text-purple-700 px-3 py-1 rounded-lg text-xs font-black shadow-sm border border-purple-100 uppercase tracking-widest">
+                                        {students.length} Total
+                                    </span>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-2 hide-scrollbar">
+                                    {students.length === 0 ? (
+                                        <p className="p-8 text-slate-400 text-center font-medium">Class completely empty.</p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {students.map(student => (
+                                                <motion.div whileHover={{ scale: 1.02 }} key={student.id} className="p-4 bg-slate-50/50 hover:bg-purple-50/80 rounded-2xl flex justify-between items-center group cursor-pointer border border-transparent hover:border-purple-100 transition-colors">
+                                                    <div>
+                                                        <p className="font-black text-slate-800 group-hover:text-purple-700 transition-colors">{student.name}</p>
+                                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">SR: {student.sr_number}</p>
+                                                    </div>
+                                                    <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center group-hover:bg-purple-600 transition-colors shadow-sm">
+                                                        <GraduationCap className="h-5 w-5 text-slate-400 group-hover:text-white" />
+                                                    </div>
+                                                </motion.div>
+                                            ))}
                                         </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
 
-                        {/* Class Performance (Recharts) */}
-                        <div className="lg:col-span-2 space-y-6 animate-[fade-in-up_0.6s_ease-out]">
-                            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 p-6">
-                                <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                                    <BarChart2 className="w-6 h-6 text-indigo-600" /> Class Performance Analytics
-                                </h2>
-                                {marks.length === 0 ? (
-                                    <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                        <p className="text-gray-500">No data available for analytics.</p>
-                                    </div>
-                                ) : (
-                                    <div className="h-72 w-full">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={getClassAverages()} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                                                <defs>
-                                                    <linearGradient id="colorAvg" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.8} />
-                                                        <stop offset="95%" stopColor="#818cf8" stopOpacity={0.2} />
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                                                <XAxis dataKey="subject" tick={{ fill: '#4b5563' }} axisLine={false} tickLine={false} />
-                                                <YAxis domain={[0, 100]} tick={{ fill: '#4b5563' }} axisLine={false} tickLine={false} label={{ value: 'Avg %', angle: -90, position: 'insideLeft', fill: '#9ca3af' }} />
-                                                <Tooltip
-                                                    cursor={{ fill: '#eff6ff' }}
-                                                    contentStyle={{ borderRadius: '12px', borderColor: '#e5e7eb', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                                    formatter={(value: any) => [`${value}%`, 'Average Score']}
-                                                />
-                                                <Bar dataKey="average" fill="url(#colorAvg)" radius={[6, 6, 0, 0]} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                            <div className="lg:col-span-2 space-y-8">
+                                {/* Bar Chart */}
+                                <motion.div variants={itemVariants} className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-purple-50 p-6 md:p-8">
+                                    <h2 className="text-xl font-black text-slate-800 mb-8 flex items-center gap-3">
+                                        <div className="bg-fuchsia-100 p-2 rounded-xl">
+                                            <BarChart2 className="w-5 h-5 text-fuchsia-600" />
+                                        </div>
+                                        Class Master Analytics
+                                    </h2>
+                                    {marks.length === 0 ? (
+                                        <div className="text-center py-16 text-slate-400"><p className="font-medium text-lg">No examination data populated yet.</p></div>
+                                    ) : (
+                                        <div className="h-80 w-full relative">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={getClassAverages()} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                                    <defs>
+                                                        <linearGradient id="colorAvg" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor="#9333ea" stopOpacity={0.9} />
+                                                            <stop offset="100%" stopColor="#c084fc" stopOpacity={0.4} />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                    <XAxis dataKey="subject" tick={{ fill: '#64748b', fontWeight: 600 }} axisLine={false} tickLine={false} dy={10} />
+                                                    <YAxis domain={[0, 100]} tick={{ fill: '#64748b', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                                                    <Tooltip cursor={{ fill: '#faf5ff' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontWeight: 600 }} formatter={(value: any) => [`${value}%`, 'Class Avg']} />
+                                                    <Bar dataKey="average" fill="url(#colorAvg)" radius={[8, 8, 0, 0]} animationDuration={1500} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    )}
+                                </motion.div>
 
-                        {/* Academic Performance (Marks feed) */}
-                        <div className="lg:col-span-3 space-y-6">
-                            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 animate-[fade-in-up_0.7s_ease-out]">
-                                <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                                    <BookOpen className="w-6 h-6 text-indigo-600" /> Recent Examinations
-                                </h2>
-                                {marks.length === 0 ? (
-                                    <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                                        <BarChart2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                        <p className="text-gray-500">No examination records found for this class.</p>
-                                    </div>
-                                ) : (
-                                    <div className="grid gap-4">
-                                        {marks.map(mark => (
-                                            <div key={mark.id} className="bg-gray-50 rounded-xl p-5 border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-white hover:shadow-md transition-all">
-                                                <div className="mb-4 sm:mb-0">
-                                                    <div className="flex items-center gap-3 mb-1">
-                                                        <h3 className="font-bold text-gray-900 text-lg">{mark.student_name}</h3>
-                                                        <span className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-md font-semibold">{mark.exam_type}</span>
+                                {/* Exam Log */}
+                                <motion.div variants={itemVariants} className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 border border-purple-50">
+                                    <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-3">
+                                        <div className="bg-blue-100 p-2 rounded-xl">
+                                            <BookOpen className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        Global Examination Feed
+                                    </h2>
+                                    {marks.length === 0 ? (
+                                        <div className="text-center py-12 text-slate-400"><p className="font-medium">No records found.</p></div>
+                                    ) : (
+                                        <div className="grid gap-4">
+                                            {marks.map(mark => (
+                                                <motion.div whileHover={{ scale: 1.01 }} key={mark.id} className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-white hover:shadow-md transition-all">
+                                                    <div>
+                                                        <div className="flex items-center gap-3 mb-1">
+                                                            <h3 className="font-black text-slate-800 text-lg">{mark.student_name}</h3>
+                                                            <span className="bg-purple-100 text-purple-700 text-[10px] px-2 py-1 rounded-md font-black uppercase tracking-widest">{mark.exam_type}</span>
+                                                        </div>
+                                                        <p className="text-slate-500 font-bold text-sm tracking-wide flex items-center gap-2">
+                                                            {mark.subject}
+                                                        </p>
                                                     </div>
-                                                    <p className="text-gray-600 flex items-center gap-2">
-                                                        <BookOpen className="w-4 h-4" /> {mark.subject}
-                                                    </p>
-                                                </div>
-
-                                                <div className="flex items-center justify-between sm:justify-end gap-6">
-                                                    <div className="text-right">
-                                                        <p className="text-sm text-gray-500 font-medium lowercase capitalize">score</p>
-                                                        <p className="text-2xl font-black text-indigo-600">{mark.marks}<span className="text-lg text-gray-400 font-normal">/{mark.total_marks}</span></p>
+                                                    <div className="flex justify-between sm:justify-end items-center gap-6 mt-4 sm:mt-0">
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Score</p>
+                                                            <p className="text-2xl font-black text-slate-800 leading-none">{mark.marks}<span className="text-base text-slate-400">/{mark.total_marks}</span></p>
+                                                        </div>
+                                                        <div className={`px-4 py-2 rounded-xl font-black tracking-widest uppercase text-sm ${mark.grade === 'Good' || mark.grade === 'A' ? 'bg-emerald-100 text-emerald-700' : mark.grade === 'Average' || mark.grade === 'B' ? 'bg-amber-100 text-amber-600' : 'bg-rose-100 text-rose-600'}`}>
+                                                            {mark.grade}
+                                                        </div>
                                                     </div>
-                                                    <div className={`px-4 py-2 rounded-lg font-bold ${mark.grade === 'Good' || mark.grade === 'A' ? 'bg-green-100 text-green-700' :
-                                                        mark.grade === 'Average' || mark.grade === 'B' ? 'bg-yellow-100 text-yellow-700' :
-                                                            'bg-red-100 text-red-700'
-                                                        }`}>
-                                                        {mark.grade}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </motion.div>
                             </div>
-                        </div>
 
-                    </div>
+                        </motion.div>
+                    </AnimatePresence>
                 )}
             </main>
         </div>
