@@ -1,18 +1,38 @@
 import { useState } from 'react';
-import { GraduationCap, LogIn, ArrowLeft } from 'lucide-react';
+import { GraduationCap, LogIn, ArrowLeft, BookMarked } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { loginTeacher } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
+const SUBJECTS = [
+  'Mathematics',
+  'Science',
+  'English',
+  'Hindi',
+  'Social Science',
+  'Computer Science',
+  'Sanskrit',
+  'Physical Education',
+  'Drawing / Art',
+  'General Knowledge',
+  'Moral Science',
+  'Other',
+];
+
 export function TeacherLogin({ onBack }: { onBack: () => void }) {
   const [teacherId, setTeacherId] = useState('');
   const [password, setPassword] = useState('');
+  const [subject, setSubject] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { school, loginAsTeacher } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!subject) {
+      setError('Please select your subject.');
+      return;
+    }
     setError('');
     setLoading(true);
 
@@ -22,9 +42,10 @@ export function TeacherLogin({ onBack }: { onBack: () => void }) {
         schoolId: school!.id,
         password,
       });
-      // Small artificial delay to allow button animation
+      // Override subject with what teacher selected at login
+      const teacherWithSubject = { ...data, subject };
       await new Promise((res) => setTimeout(res, 600));
-      loginAsTeacher(data, school!);
+      loginAsTeacher(teacherWithSubject, school!);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
       console.error(err);
@@ -36,7 +57,7 @@ export function TeacherLogin({ onBack }: { onBack: () => void }) {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 relative overflow-hidden font-sans">
 
-      {/* Abstract Corporate Blue Geometric Background */}
+      {/* Background blobs */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-40">
         <motion.div
           initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
@@ -94,8 +115,10 @@ export function TeacherLogin({ onBack }: { onBack: () => void }) {
           </motion.p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
+        <form onSubmit={handleLogin} className="space-y-5">
+
+          {/* Teacher ID */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 }}>
             <label className="block text-sm font-bold text-slate-700 mb-2">Teacher ID</label>
             <input
               type="text"
@@ -107,7 +130,49 @@ export function TeacherLogin({ onBack }: { onBack: () => void }) {
             />
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
+          {/* Subject Dropdown */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.45 }}>
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              <span className="flex items-center gap-2">
+                <BookMarked className="w-4 h-4 text-blue-500" />
+                Subject
+              </span>
+            </label>
+            <div className="relative">
+              <select
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="w-full px-5 py-4 border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all duration-300 outline-none bg-slate-50 focus:bg-white text-slate-800 font-medium appearance-none cursor-pointer"
+                required
+              >
+                <option value="" disabled>Select your subject...</option>
+                {SUBJECTS.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-400">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+            <AnimatePresence>
+              {subject && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  className="mt-2 inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-full border border-blue-100"
+                >
+                  <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                  {subject} selected
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
+          {/* Password */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.55 }}>
             <label className="block text-sm font-bold text-slate-700 mb-2">Password</label>
             <input
               type="password"
@@ -119,6 +184,7 @@ export function TeacherLogin({ onBack }: { onBack: () => void }) {
             />
           </motion.div>
 
+          {/* Error */}
           <AnimatePresence>
             {error && (
               <motion.div
@@ -132,10 +198,11 @@ export function TeacherLogin({ onBack }: { onBack: () => void }) {
             )}
           </AnimatePresence>
 
+          {/* Submit */}
           <motion.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.65 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             type="submit"
