@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 const SUBJECTS = [
   'Mathematics',
   'Science',
+  'Physics',
   'English',
   'Hindi',
   'Social Science',

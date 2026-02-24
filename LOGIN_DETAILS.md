@@ -9,10 +9,13 @@ This document contains a comprehensive list of all generated test credentials fo
 **Principal Password:** `331022`
 
 ### 👨‍🏫 Teachers
-| Teacher Name | Teacher ID | Subject | Class | Password |
+> [!IMPORTANT]
+> **SUBJECT SELECTION REQUIRED:** To log in successfully, you **must** select the exact subject listed below in the login dropdown.
+
+| Teacher Name | Teacher ID | Subject (Select this in Dropdown) | Class | Password |
 |---|---|---|---|---|
-| Manish Sain | `T101` | Computer Science | 11th | `password123` |
-| Sunita Sharma | `T102` | Mathematics | 10th | `password123` |
+| Manish Sain | `T101` | **Computer Science** | 11th | `password123` |
+| Sunita Sharma | `T102` | **Mathematics** | 10th | `password123` |
 
 ### 👨‍👩‍👦 Students (5 Students per Class)
 *All students have the password: `331022@aman`*
@@ -108,10 +111,13 @@ This document contains a comprehensive list of all generated test credentials fo
 **Principal Password:** `331022`
 
 ### 👨‍🏫 Teachers
-| Teacher Name | Teacher ID | Subject | Class | Password |
+> [!IMPORTANT]
+> **SUBJECT SELECTION REQUIRED:** To log in successfully, you **must** select the exact subject listed below in the login dropdown.
+
+| Teacher Name | Teacher ID | Subject (Select this in Dropdown) | Class | Password |
 |---|---|---|---|---|
-| Ramesh Patel | `T201` | Physics | 12th | `password123` |
-| Kavita Verma | `T202` | English | 9th | `password123` |
+| Ramesh Patel | `T201` | **Physics** ⚠️ *(Wait, Physics is not in the dropdown list! Let me fix the dropdown list first)* | 12th | `password123` |
+| Kavita Verma | `T202` | **English** | 9th | `password123` |
 
 ### 👨‍👩‍👦 Students (5 Students per Class)
 *All students have the password: `331022@aman`*
@@ -207,9 +213,12 @@ This document contains a comprehensive list of all generated test credentials fo
 **Principal Password:** `331022`
 
 ### 👨‍🏫 Teachers
-| Teacher Name | Teacher ID | Subject | Class | Password |
+> [!IMPORTANT]
+> **SUBJECT SELECTION REQUIRED:** To log in successfully, you **must** select the exact subject listed below in the login dropdown.
+
+| Teacher Name | Teacher ID | Subject (Select this in Dropdown) | Class | Password |
 |---|---|---|---|---|
-| Suresh Choudhary | `T301` | Hindi | 8th | `password123` |
+| Suresh Choudhary | `T301` | **Hindi** | 8th | `password123` |
 
 ### 👨‍👩‍👦 Students (5 Students per Class)
 *All students have the password: `331022@aman`*
