@@ -31,13 +31,14 @@ export function PrincipalDashboard() {
             setLoading(true);
             try {
                 const classStudents = await getStudents(principal.id, selectedClass);
-                setStudents(classStudents);
+                const limitedStudents = classStudents.slice(0, 8);
+                setStudents(limitedStudents);
 
                 const classHomework = await getHomeworkByClass(principal.id, selectedClass);
                 setHomeworkList(classHomework || []);
 
-                if (classStudents.length > 0) {
-                    const studentIds = classStudents.map(s => s.id);
+                if (limitedStudents.length > 0) {
+                    const studentIds = limitedStudents.map(s => s.id);
                     const classMarks = await getMarksByStudentIds(studentIds);
                     setMarks(classMarks);
                 } else {
@@ -224,7 +225,7 @@ export function PrincipalDashboard() {
                                         <div className="text-center py-12 text-slate-400"><p className="font-medium">No records found.</p></div>
                                     ) : (
                                         <div className="grid gap-4">
-                                            {marks.map(mark => (
+                                            {marks.slice(0, 8).map(mark => (
                                                 <motion.div whileHover={{ scale: 1.01 }} key={mark.id} className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-white hover:shadow-md transition-all">
                                                     <div>
                                                         <div className="flex items-center gap-3 mb-1">
