@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LogOut, ArrowLeft, Users, BookOpen, Star, Send, LayoutDashboard, FlaskConical } from 'lucide-react';
+import { LogOut, ArrowLeft, Users, BookOpen, Star, Send, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { createHomework, createMark, getMarksByStudentIds, getStudents } from '../lib/api';
@@ -124,8 +124,8 @@ export function TeacherDashboard() {
       >
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center transform rotate-3">
-              <LayoutDashboard className="w-5 h-5 text-white transform -rotate-3" />
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-md">
+              <img src="/logo.png" alt="EduVantage Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-xl font-black">{teacher.name}</h1>
@@ -264,8 +264,8 @@ export function TeacherDashboard() {
                                 <div key={m.id} className="flex justify-between items-center bg-white p-2 rounded-xl shadow-sm">
                                   <span className="font-bold text-slate-600 text-sm truncate mr-4">{m.exam_type}</span>
                                   <span className={`font-black text-sm px-2 py-1 rounded-lg ${m.grade === 'Good' ? 'bg-emerald-100 text-emerald-700' :
-                                      m.grade === 'Average' ? 'bg-yellow-100 text-yellow-700' :
-                                        'bg-red-100 text-red-700'
+                                    m.grade === 'Average' ? 'bg-yellow-100 text-yellow-700' :
+                                      'bg-red-100 text-red-700'
                                     }`}>{m.marks}/{m.total_marks}</span>
                                 </div>
                               ))}

@@ -2,15 +2,15 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { LogOut, Users, BookOpen, GraduationCap, ArrowLeft, BarChart2, Building2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { getStudents, getMarksByStudentIds, Student, MarkWithStudentName } from '../lib/api';
 
-const containerVariants = {
+const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } }
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
@@ -68,8 +68,8 @@ export function PrincipalDashboard() {
                 <nav className="bg-white/80 backdrop-blur-xl border-b border-purple-100 shadow-sm sticky top-0 z-40">
                     <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                            <div className="bg-purple-600 p-2.5 rounded-xl shadow-lg shadow-purple-200">
-                                <Building2 className="w-6 h-6 text-white" />
+                            <div className="w-12 h-12 bg-white rounded-xl shadow-lg shadow-purple-200 p-1">
+                                <img src="/logo.png" alt="Smart School Logo" className="w-full h-full object-contain" />
                             </div>
                             <div>
                                 <h1 className="font-black text-xl text-slate-800">Principal Directory</h1>
@@ -122,6 +122,11 @@ export function PrincipalDashboard() {
                         <motion.button whileHover={{ x: -2 }} whileTap={{ scale: 0.95 }} onClick={() => setSelectedClass(null)} className="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors">
                             <ArrowLeft className="w-5 h-5" />
                         </motion.button>
+
+                        <div className="w-12 h-12 bg-white rounded-xl shadow-sm p-1 hidden sm:block">
+                            <img src="/logo.png" alt="Smart School Logo" className="w-full h-full object-contain" />
+                        </div>
+
                         <div>
                             <h1 className="font-black text-xl text-slate-800">Class {selectedClass} Protocol</h1>
                             <p className="text-xs font-bold text-purple-600 uppercase tracking-wider">{principal?.school_name}</p>

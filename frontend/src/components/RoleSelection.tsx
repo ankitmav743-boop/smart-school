@@ -1,8 +1,8 @@
 import { GraduationCap, School as SchoolIcon, Users, Building2, Info } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -10,7 +10,7 @@ const containerVariants = {
   }
 };
 
-const cardVariants = {
+const cardVariants: Variants = {
   hidden: { opacity: 0, y: 50, scale: 0.9 },
   show: {
     opacity: 1,
@@ -104,8 +104,19 @@ export function RoleSelection({
         <span className="font-bold text-slate-700 group-hover:text-blue-600 transition-colors">About Developer</span>
       </motion.button>
 
+      {/* Top Left Logo */}
+      <motion.div
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.5, type: "spring" }}
+        className="absolute top-4 left-4 md:top-6 md:left-6 z-30"
+      >
+        <img src="/logo.png" alt="Smart School Logo" className="w-[80px] h-[80px] md:w-[100px] md:h-[100px] object-contain drop-shadow-md bg-white/60 backdrop-blur-md rounded-2xl p-2 border border-white/40" />
+      </motion.div>
+
       {/* Header Section */}
-      <div className="text-center mb-12 relative z-10 perspective-1000">
+      <div className="text-center mb-12 relative z-10 perspective-1000 mt-12 md:mt-4">
+
         <KineticText
           text="Integrated School Portal"
           className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 mb-6 drop-shadow-sm"

@@ -192,8 +192,8 @@ export function ParentDashboard() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl shadow-lg flex items-center justify-center transform rotate-3">
-              <User className="w-6 h-6 text-white transform -rotate-3" />
+            <div className="w-12 h-12 bg-white rounded-xl shadow-md p-1 flex items-center justify-center">
+              <img src="/logo.png" alt="EduVantage Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-800 leading-tight">Student Portal</h1>
