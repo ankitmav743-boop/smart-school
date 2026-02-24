@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Users, BookOpen, GraduationCap, ArrowLeft, BarChart2, Building2 } from 'lucide-react';
+import { LogOut, Users, BookOpen, GraduationCap, ArrowLeft, BarChart2, Building2, ClipboardList } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { getStudents, getMarksByStudentIds, Student, MarkWithStudentName } from '../lib/api';
+import { getStudents, getMarksByStudentIds, getHomeworkByClass, Student, MarkWithStudentName, Homework } from '../lib/api';
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -22,6 +22,7 @@ export function PrincipalDashboard() {
     const [selectedClass, setSelectedClass] = useState<string | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
     const [marks, setMarks] = useState<MarkWithStudentName[]>([]);
+    const [homeworkList, setHomeworkList] = useState<Homework[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -31,6 +32,10 @@ export function PrincipalDashboard() {
             try {
                 const classStudents = await getStudents(principal.id, selectedClass);
                 setStudents(classStudents);
+
+                const classHomework = await getHomeworkByClass(principal.id, selectedClass);
+                setHomeworkList(classHomework || []);
+
                 if (classStudents.length > 0) {
                     const studentIds = classStudents.map(s => s.id);
                     const classMarks = await getMarksByStudentIds(studentIds);
@@ -237,6 +242,43 @@ export function PrincipalDashboard() {
                                                         </div>
                                                         <div className={`px-4 py-2 rounded-xl font-black tracking-widest uppercase text-sm ${mark.grade === 'Good' || mark.grade === 'A' ? 'bg-emerald-100 text-emerald-700' : mark.grade === 'Average' || mark.grade === 'B' ? 'bg-amber-100 text-amber-600' : 'bg-rose-100 text-rose-600'}`}>
                                                             {mark.grade}
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </motion.div>
+
+                                {/* Homework Log */}
+                                <motion.div variants={itemVariants} className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 border border-purple-50">
+                                    <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-3">
+                                        <div className="bg-sky-100 p-2 rounded-xl">
+                                            <ClipboardList className="w-5 h-5 text-sky-600" />
+                                        </div>
+                                        Class Homework Feed
+                                    </h2>
+                                    {homeworkList.length === 0 ? (
+                                        <div className="text-center py-12 text-slate-400"><p className="font-medium">No homework assignments found.</p></div>
+                                    ) : (
+                                        <div className="grid gap-4">
+                                            {homeworkList.map(hw => (
+                                                <motion.div whileHover={{ scale: 1.01 }} key={hw.id} className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 flex flex-col sm:flex-row sm:items-start justify-between hover:bg-white hover:shadow-md transition-all">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <h3 className="font-black text-slate-800 text-lg">{hw.subject}</h3>
+                                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-md">Assigned: {new Date(hw.assigned_date).toLocaleDateString()}</span>
+                                                        </div>
+                                                        <p className="text-slate-600 font-medium text-sm bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                                            {hw.description}
+                                                        </p>
+                                                    </div>
+                                                    <div className="mt-4 sm:mt-0 sm:ml-6 flex-shrink-0">
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Due Date</p>
+                                                            <div className="bg-sky-50 text-sky-700 px-3 py-1.5 rounded-lg text-sm font-bold border border-sky-100 inline-block">
+                                                                {new Date(hw.due_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </motion.div>
