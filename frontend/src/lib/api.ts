@@ -89,6 +89,7 @@ export async function loginTeacher(params: {
   teacherId: string;
   schoolId: string;
   password?: string;
+  subject: string;
 }) {
   return request<Teacher>('/auth/teacher-login', {
     method: 'POST',

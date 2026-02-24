@@ -41,8 +41,9 @@ export function TeacherLogin({ onBack }: { onBack: () => void }) {
         teacherId,
         schoolId: school!.id,
         password,
+        subject,
       });
-      // Override subject with what teacher selected at login
+      // Backend already validates that the assigned subject matches the selected subject.
       const teacherWithSubject = { ...data, subject };
       await new Promise((res) => setTimeout(res, 600));
       loginAsTeacher(teacherWithSubject, school!);

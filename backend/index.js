@@ -375,18 +375,18 @@ app.post('/api/auth/principal-login', async (req, res, next) => {
 });
 
 app.post('/api/auth/teacher-login', async (req, res, next) => {
-  const { teacherId, schoolId, password } = req.body;
+  const { teacherId, schoolId, password, subject } = req.body;
 
-  if (!teacherId || !schoolId || !password) {
+  if (!teacherId || !schoolId || !password || !subject) {
     return res.status(400).json({
-      message: 'teacherId, schoolId, and password are required',
+      message: 'teacherId, schoolId, password, and subject are required',
     });
   }
 
   const cleanTeacherId = teacherId.trim();
 
   try {
-    console.log(`Teacher Login Attempt: ID=${cleanTeacherId}, School=${schoolId}, Pass=${password}`);
+    console.log(`Teacher Login Attempt: ID=${cleanTeacherId}, School=${schoolId}, Pass=${password}, Subject=${subject}`);
 
     const [rows] = await pool.query(
       `SELECT id, teacher_id, name, subject, \`class\`, school_id, password, created_at
@@ -417,6 +417,12 @@ app.post('/api/auth/teacher-login', async (req, res, next) => {
     if (!isValid) {
       console.log(`Teacher Login Failed: Password mismatch for ID=${cleanTeacherId}. Input: ${password}, DB: ${rows[0].password}`);
       return res.status(401).json({ message: 'Invalid teacher credentials' });
+    }
+
+    // Validate subject matches the database record
+    if (rows[0].subject !== subject) {
+      console.log(`Teacher Login Failed: Subject mismatch for ID=${cleanTeacherId}. Input: ${subject}, DB: ${rows[0].subject}`);
+      return res.status(401).json({ message: 'Aapne galat subject select kiya hai. Kripya apna sahi subject chunein.' });
     }
 
     const user = normalizeTeacher(rows[0]);
