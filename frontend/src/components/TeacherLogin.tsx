@@ -38,13 +38,20 @@ export function TeacherLogin({ onBack }: { onBack: () => void }) {
     setLoading(true);
 
     try {
+      // API check karega teacherId aur password ko
       const data = await loginTeacher({
         teacherId,
         schoolId: school!.id,
         password,
         subject,
       });
-      // Backend already validates that the assigned subject matches the selected subject.
+
+      // Frontend Pe Validate Karein: Jo subject teacher ne form me dala, 
+      // wahi database me usko assigned hai ya nahi
+      if (data.subject !== subject) {
+        throw new Error("Aapne galat subject select kiya hai. Kripya apna sahi subject chunein.");
+      }
+
       const teacherWithSubject = { ...data, subject };
       await new Promise((res) => setTimeout(res, 600));
       loginAsTeacher(teacherWithSubject, school!);
@@ -52,7 +59,7 @@ export function TeacherLogin({ onBack }: { onBack: () => void }) {
       const errorMsg = err instanceof Error ? err.message : 'Login failed. Please try again.';
       setError(errorMsg);
       console.error("Login Error:", err);
-      // Added an explicit popup alert so the user definitely sees the validation is working
+      // Explicit popup alert
       if (errorMsg.includes('galat subject') || errorMsg.includes('subject')) {
         alert("⚠️ GALAT SUBJECT! ⚠️\n\n" + errorMsg + "\n\nAapne jo details daali wo database se match nahi kar rahi.");
       }
