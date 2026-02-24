@@ -1,20 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LogOut, ArrowLeft, Users, BookOpen, Star, Send, FlaskConical } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut, ArrowLeft, Users, BookOpen, Star, Send, FlaskConical, CheckCircle2, FileDown } from 'lucide-react';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { createHomework, createMark, getMarksByStudentIds, getStudents } from '../lib/api';
+import { createHomework, createMark, getAttendanceByClass, getMarksByStudentIds, getStudents, saveAttendanceBulk } from '../lib/api';
 import { MarkWithStudentName, Student } from '../lib/types';
 
 const CLASSES = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.1 } }
 };
 
-const cardVariants = {
+const cardVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: 'spring', stiffness: 300, damping: 24 }
+  }
 };
 
 export function TeacherDashboard() {
@@ -27,6 +31,14 @@ export function TeacherDashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [marks, setMarks] = useState<MarkWithStudentName[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Attendance state
+  const [attendanceDate, setAttendanceDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().slice(0, 10);
+  });
+  const [attendance, setAttendance] = useState<Record<string, 'Present' | 'Absent' | 'Late'>>({});
+  const [savingAttendance, setSavingAttendance] = useState(false);
 
   // Homework state
   const [homeworkDescription, setHomeworkDescription] = useState('');
@@ -48,19 +60,96 @@ export function TeacherDashboard() {
       if (studentsData && studentsData.length > 0) {
         const marksData = await getMarksByStudentIds(studentsData.map((s) => s.id));
         setMarks(marksData || []);
+
+        try {
+          const attendanceData = await getAttendanceByClass({
+            schoolId: school.id,
+            classValue: selectedClass,
+            date: attendanceDate,
+          });
+          const map: Record<string, 'Present' | 'Absent' | 'Late'> = {};
+          attendanceData.forEach((rec) => {
+            if (rec.student_id && (rec.status === 'Present' || rec.status === 'Absent' || rec.status === 'Late')) {
+              map[rec.student_id] = rec.status;
+            }
+          });
+          setAttendance(map);
+        } catch (error) {
+          console.error('Error loading attendance:', error);
+          setAttendance({});
+        }
       } else {
         setMarks([]);
+        setAttendance({});
       }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
-  }, [school, teacher, selectedClass]);
+  }, [attendanceDate, school, teacher, selectedClass]);
 
   useEffect(() => {
     if (selectedClass) void loadData();
   }, [selectedClass, loadData]);
+
+  const handleAttendanceChange = (studentId: string, status: 'Present' | 'Absent' | 'Late') => {
+    setAttendance((prev) => ({
+      ...prev,
+      [studentId]: status,
+    }));
+  };
+
+  const handleSaveAttendance = async () => {
+    if (!school || !teacher || !selectedClass) return;
+    const records = students
+      .map((s) => ({
+        student_id: s.id,
+        status: attendance[s.id] || 'Present',
+      }));
+    try {
+      setSavingAttendance(true);
+      await saveAttendanceBulk({
+        school_id: school.id,
+        class: selectedClass,
+        date: attendanceDate,
+        subject: selectedSubject || undefined,
+        records,
+      });
+      alert(`Attendance saved for Class ${selectedClass} on ${attendanceDate}`);
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+      alert('Failed to save attendance');
+    } finally {
+      setSavingAttendance(false);
+    }
+  };
+
+  const handleDownloadAttendanceCsv = () => {
+    if (!students.length) return;
+    const headers = ['Student Name', 'SR Number', 'Class', 'Subject', 'Date', 'Status'];
+    const rows = students.map((s) => {
+      const status = attendance[s.id] || 'Present';
+      return [
+        `"${s.name.replace(/"/g, '""')}"`,
+        `"${s.sr_number}"`,
+        `"${selectedClass}"`,
+        `"${selectedSubject}"`,
+        `"${attendanceDate}"`,
+        `"${status}"`,
+      ].join(',');
+    });
+    const csvContent = [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `attendance_${selectedClass}_${attendanceDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const handleAddHomework = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +165,7 @@ export function TeacherDashboard() {
       });
       setHomeworkDescription('');
       setHomeworkDueDate('');
-      alert(`Homework for ${selectedSubject} assigned to Class ${selectedClass} successfully!`);
+      alert(`Homework for ${selectedSubject} assigned to Class ${selectedClass} successfully and email notification sent.`);
     } catch (error) {
       console.error('Error adding homework:', error);
       alert('Failed to assign homework');
@@ -106,6 +195,7 @@ export function TeacherDashboard() {
       });
       setActiveStudentId(null);
       await loadData();
+      alert('Marks saved and email notification triggered (if configured on the backend).');
     } catch (error) {
       console.error('Error adding marks:', error);
       alert('Failed to add evaluation');
@@ -191,11 +281,42 @@ export function TeacherDashboard() {
                     <p className="text-slate-500 font-medium text-sm">
                       Subject: <span className="font-bold text-blue-600">{selectedSubject}</span>
                     </p>
+                    <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-500">
+                      <span className="uppercase tracking-widest">Attendance Date:</span>
+                      <input
+                        type="date"
+                        value={attendanceDate}
+                        onChange={(e) => setAttendanceDate(e.target.value)}
+                        className="px-3 py-1 border border-slate-200 rounded-lg text-xs font-bold bg-white"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="hidden md:flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-2 rounded-xl">
-                  <FlaskConical className="w-4 h-4 text-blue-500" />
-                  <span className="font-bold text-blue-700 text-sm">{selectedSubject}</span>
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+                  <div className="hidden md:flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-2 rounded-xl">
+                    <FlaskConical className="w-4 h-4 text-blue-500" />
+                    <span className="font-bold text-blue-700 text-sm">{selectedSubject}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveAttendance}
+                      disabled={savingAttendance || !students.length}
+                      className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {savingAttendance ? 'Saving...' : 'Save Attendance'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDownloadAttendanceCsv}
+                      disabled={!students.length}
+                      className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      Export CSV
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -288,6 +409,29 @@ export function TeacherDashboard() {
                           >
                             <Star className="w-4 h-4" /> Weekly Eval
                           </button>
+                          <div className="flex items-center justify-center gap-2 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl text-xs">
+                            <span className="text-[10px] font-black uppercase tracking-widest">Attendance</span>
+                            <div className="inline-flex rounded-full bg-white border border-slate-200 overflow-hidden">
+                              {(['Present', 'Absent', 'Late'] as const).map((status) => (
+                                <button
+                                  key={status}
+                                  type="button"
+                                  onClick={() => handleAttendanceChange(student.id, status)}
+                                  className={`px-2 py-1 text-[10px] font-black tracking-widest ${
+                                    attendance[student.id] === status
+                                      ? status === 'Present'
+                                        ? 'bg-emerald-500 text-white'
+                                        : status === 'Absent'
+                                          ? 'bg-rose-500 text-white'
+                                          : 'bg-amber-400 text-white'
+                                      : 'text-slate-500'
+                                  }`}
+                                >
+                                  {status.charAt(0)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </motion.div>
                     );

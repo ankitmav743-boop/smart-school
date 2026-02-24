@@ -79,3 +79,17 @@ CREATE TABLE IF NOT EXISTS results (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_results_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS attendance (
+  id CHAR(36) PRIMARY KEY,
+  student_id CHAR(36) NOT NULL,
+  school_id CHAR(36) NOT NULL,
+  `class` VARCHAR(100) NOT NULL,
+  attendance_date DATE NOT NULL,
+  status ENUM('Present', 'Absent', 'Late') NOT NULL,
+  subject VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_attendance_student_date_subject (student_id, attendance_date, subject),
+  CONSTRAINT fk_attendance_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  CONSTRAINT fk_attendance_school FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE
+);

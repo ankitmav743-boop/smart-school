@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 import { assertDatabaseConnection, pool } from './db.js';
 
 dotenv.config();
@@ -13,6 +14,98 @@ const apiPort = Number(process.env.API_PORT ?? '4000');
 
 app.use(cors());
 app.use(express.json());
+
+// --- EMAIL CONFIG (HOMEWORK + MARKS NOTIFICATIONS) ---
+const GMAIL_USER = process.env.GMAIL_USER || '';
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || '';
+const PARENT_NOTIFY_EMAIL = process.env.PARENT_NOTIFY_EMAIL || GMAIL_USER;
+
+let emailTransporter = null;
+if (GMAIL_USER && GMAIL_APP_PASSWORD) {
+  emailTransporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: GMAIL_USER,
+      pass: GMAIL_APP_PASSWORD,
+    },
+    requireTLS: true,
+    family: 4,
+  });
+
+  emailTransporter
+    .verify()
+    .then(() => {
+      console.log('[Email] SMTP transporter verified (server backend). Email notifications enabled.');
+    })
+    .catch((err) => {
+      console.error('[Email] SMTP verify failed (server backend):', err?.message ?? err);
+    });
+} else {
+  console.log('[Email] GMAIL_USER ya GMAIL_APP_PASSWORD set nahi hai (server backend), email notifications skip honge.');
+}
+
+async function sendHomeworkEmailNotification({ subject, classValue, description, due_date }) {
+  if (!emailTransporter || !PARENT_NOTIFY_EMAIL) {
+    console.log('[Email] Transporter ya PARENT_NOTIFY_EMAIL missing hai, homework email skip (server backend).');
+    return;
+  }
+
+  const mailSubject = `New Homework for Class ${classValue} - ${subject}`;
+  const textBody =
+    `Namaste,\n\n` +
+    `Naya homework assign hua hai.\n\n` +
+    `Subject: ${subject}\n` +
+    `Class: ${classValue}\n` +
+    `Homework: ${description}\n` +
+    `Due Date: ${due_date}\n\n` +
+    `Kripya bachche ko time par homework complete karwane mein madad karein.\n` +
+    `— School Portal`;
+
+  try {
+    await emailTransporter.sendMail({
+      from: `"School Portal" <${GMAIL_USER}>`,
+      to: PARENT_NOTIFY_EMAIL,
+      subject: mailSubject,
+      text: textBody,
+    });
+    console.log(`[Email] Homework notification sent to ${PARENT_NOTIFY_EMAIL} (server backend)`);
+  } catch (err) {
+    console.error('[Email] Error sending homework email (server backend):', err.message);
+  }
+}
+
+async function sendMarksEmailNotification({ studentName, classValue, subject, exam_type, marks, total_marks, grade }) {
+  if (!emailTransporter || !PARENT_NOTIFY_EMAIL) {
+    console.log('[Email] Transporter ya PARENT_NOTIFY_EMAIL missing hai, marks email skip (server backend).');
+    return;
+  }
+
+  const mailSubject = `Marks Published - ${studentName} (${classValue}) - ${subject}`;
+  const textBody =
+    `Namaste,\n\n` +
+    `Aapke bachche ke marks publish ho gaye hain.\n\n` +
+    `Student: ${studentName}\n` +
+    `Class: ${classValue}\n` +
+    `Subject: ${subject}\n` +
+    `Exam: ${exam_type}\n` +
+    `Marks: ${marks}/${total_marks}\n` +
+    `Grade: ${grade}\n\n` +
+    `— School Portal`;
+
+  try {
+    await emailTransporter.sendMail({
+      from: `"School Portal" <${GMAIL_USER}>`,
+      to: PARENT_NOTIFY_EMAIL,
+      subject: mailSubject,
+      text: textBody,
+    });
+    console.log(`[Email] Marks notification sent to ${PARENT_NOTIFY_EMAIL} (server backend)`);
+  } catch (err) {
+    console.error('[Email] Error sending marks email (server backend):', err.message);
+  }
+}
 
 function toISODateString(value) {
   if (!value) {
@@ -385,6 +478,28 @@ app.post('/api/marks', async (req, res, next) => {
       [student_id, `Marks for ${subject} (${exam_type}) have been published.`]
     );
 
+    // Email notification to configured parent email (single demo email)
+    try {
+      const [studentRows] = await pool.query(
+        `SELECT name, \`class\` FROM students WHERE id = ? LIMIT 1`,
+        [student_id]
+      );
+      const studentName = studentRows[0]?.name || 'Student';
+      const studentClass = studentRows[0]?.class || '';
+
+      await sendMarksEmailNotification({
+        studentName,
+        classValue: studentClass,
+        subject,
+        exam_type,
+        marks,
+        total_marks,
+        grade,
+      });
+    } catch (err) {
+      console.error('[Email] Failed to prepare marks email (server backend):', err?.message ?? err);
+    }
+
     return res.status(201).json({ message: 'Marks saved successfully' });
   } catch (error) {
     return next(error);
@@ -443,6 +558,14 @@ app.post('/api/homework', async (req, res, next) => {
       );
     }
 
+    // Email notification (single configured parent email)
+    await sendHomeworkEmailNotification({
+      subject,
+      classValue,
+      description,
+      due_date,
+    });
+
     return res.status(201).json({ ok: true });
   } catch (error) {
     return next(error);
@@ -488,6 +611,84 @@ app.post('/api/exam-timetable', async (req, res, next) => {
        ) VALUES (UUID(), ?, ?, ?, ?, ?, ?, NOW())`,
       [school_id, classValue, subject, exam_date, exam_time, exam_type]
     );
+
+    return res.status(201).json({ ok: true });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get('/api/attendance', async (req, res, next) => {
+  const schoolId = req.query.schoolId;
+  const classValue = req.query.classValue;
+  const date = req.query.date;
+
+  if (!schoolId || !classValue || !date) {
+    return res.status(400).json({ message: 'schoolId, classValue, and date are required' });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, student_id, school_id, \`class\`, attendance_date, status, subject, created_at
+       FROM attendance
+       WHERE school_id = ? AND \`class\` = ? AND attendance_date = ?
+       ORDER BY created_at ASC`,
+      [schoolId, classValue, date]
+    );
+
+    res.json(
+      rows.map((row) => ({
+        ...row,
+        attendance_date: toISODateString(row.attendance_date),
+        created_at: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+      }))
+    );
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/api/attendance/bulk', async (req, res, next) => {
+  const { school_id, class: classValue, date, subject, records } = req.body;
+
+  if (!school_id || !classValue || !date || !Array.isArray(records) || records.length === 0) {
+    return res.status(400).json({
+      message: 'school_id, class, date and non-empty records array are required',
+    });
+  }
+
+  const validStatuses = new Set(['Present', 'Absent', 'Late']);
+
+  try {
+    for (const record of records) {
+      const { student_id, status } = record || {};
+      if (!student_id || !status || !validStatuses.has(status)) {
+        continue;
+      }
+
+      const [existing] = await pool.query(
+        `SELECT id FROM attendance 
+         WHERE student_id = ? AND attendance_date = ? AND (subject IS NULL OR subject = ?) 
+         LIMIT 1`,
+        [student_id, date, subject || null]
+      );
+
+      if (existing.length > 0) {
+        await pool.query(
+          `UPDATE attendance
+           SET status = ?, school_id = ?, \`class\` = ?, subject = ?, created_at = NOW()
+           WHERE id = ?`,
+          [status, school_id, classValue, subject || null, existing[0].id]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO attendance (
+             id, student_id, school_id, \`class\`, attendance_date, status, subject, created_at
+           ) VALUES (UUID(), ?, ?, ?, ?, ?, ?, NOW())`,
+          [student_id, school_id, classValue, date, status, subject || null]
+        );
+      }
+    }
 
     return res.status(201).json({ ok: true });
   } catch (error) {

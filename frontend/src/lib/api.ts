@@ -1,4 +1,5 @@
 import {
+  AttendanceRecord,
   ExamTimetable,
   Homework,
   Mark,
@@ -176,6 +177,32 @@ export async function createExamTimetable(payload: {
   exam_type: string;
 }) {
   return request<{ ok: boolean }>('/exam-timetable', {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export async function getAttendanceByClass(params: {
+  schoolId: string;
+  classValue: string;
+  date: string;
+}) {
+  const query = new URLSearchParams({
+    schoolId: params.schoolId,
+    classValue: params.classValue,
+    date: params.date,
+  }).toString();
+  return request<AttendanceRecord[]>(`/attendance?${query}`);
+}
+
+export async function saveAttendanceBulk(payload: {
+  school_id: string;
+  class: string;
+  date: string;
+  subject?: string;
+  records: { student_id: string; status: 'Present' | 'Absent' | 'Late' }[];
+}) {
+  return request<{ ok: boolean }>('/attendance/bulk', {
     method: 'POST',
     body: payload,
   });

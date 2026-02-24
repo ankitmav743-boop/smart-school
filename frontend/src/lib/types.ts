@@ -75,3 +75,14 @@ export type Result = {
   result_file_url: string | null;
   created_at: string;
 };
+
+export type AttendanceRecord = {
+  id: string;
+  student_id: string;
+  school_id: string;
+  class: string;
+  attendance_date: string;
+  status: 'Present' | 'Absent' | 'Late';
+  subject: string | null;
+  created_at: string;
+};
