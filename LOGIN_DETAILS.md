@@ -16,6 +16,9 @@ This document contains a comprehensive list of all generated test credentials fo
 |---|---|---|---|---|
 | Manish Sain | `T101` | **Computer Science** | 11th | `password123` |
 | Sunita Sharma | `T102` | **Mathematics** | 10th | `password123` |
+| Amit Kumar | `T103` | **Science** | 9th | `password123` |
+| Rajesh Singh | `T104` | **Social Science** | 8th | `password123` |
+| Neha Gupta | `T105` | **Sanskrit** | 7th | `password123` |
 
 ### 👨‍👩‍👦 Students (5 Students per Class)
 *All students have the password: `331022@aman`*
@@ -116,8 +119,10 @@ This document contains a comprehensive list of all generated test credentials fo
 
 | Teacher Name | Teacher ID | Subject (Select this in Dropdown) | Class | Password |
 |---|---|---|---|---|
-| Ramesh Patel | `T201` | **Physics** ⚠️ *(Wait, Physics is not in the dropdown list! Let me fix the dropdown list first)* | 12th | `password123` |
+| Ramesh Patel | `T201` | **Physics** | 12th | `password123` |
 | Kavita Verma | `T202` | **English** | 9th | `password123` |
+| Vikram Sharma | `T203` | **Physical Education** | all | `password123` |
+| Pooja Verma | `T204` | **Drawing / Art** | all | `password123` |
 
 ### 👨‍👩‍👦 Students (5 Students per Class)
 *All students have the password: `331022@aman`*
@@ -219,6 +224,9 @@ This document contains a comprehensive list of all generated test credentials fo
 | Teacher Name | Teacher ID | Subject (Select this in Dropdown) | Class | Password |
 |---|---|---|---|---|
 | Suresh Choudhary | `T301` | **Hindi** | 8th | `password123` |
+| Ramesh Rao | `T302` | **General Knowledge** | 5th | `password123` |
+| Sneha Jain | `T303` | **Moral Science** | 6th | `password123` |
+| Rahul Desai | `T304` | **Other** | all | `password123` |
 
 ### 👨‍👩‍👦 Students (5 Students per Class)
 *All students have the password: `331022@aman`*

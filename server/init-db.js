@@ -49,7 +49,7 @@ function generateStudents(prefix, countPerClass) {
         srNumber: srCounter.toString(),
         name: fullName,
         classValue: cls,
-        password: '331022@ankit'
+        password: '331022@aman'
       });
       srCounter++;
     }
@@ -65,20 +65,11 @@ const seedSchools = [
       schoolName: 'Govt. Senior Secondary School, Churu',
     },
     teachers: [
-      {
-        teacherId: 'T101',
-        name: 'Manish Sain',
-        subject: 'Computer Science',
-        classValue: '11th',
-        password: 'password123',
-      },
-      {
-        teacherId: 'T102',
-        name: 'Sunita Sharma',
-        subject: 'Mathematics',
-        classValue: '10th',
-        password: 'password123',
-      },
+      { teacherId: 'T101', name: 'Manish Sain', subject: 'Computer Science', classValue: '11th', password: 'password123' },
+      { teacherId: 'T102', name: 'Sunita Sharma', subject: 'Mathematics', classValue: '10th', password: 'password123' },
+      { teacherId: 'T103', name: 'Amit Kumar', subject: 'Science', classValue: '9th', password: 'password123' },
+      { teacherId: 'T104', name: 'Rajesh Singh', subject: 'Social Science', classValue: '8th', password: 'password123' },
+      { teacherId: 'T105', name: 'Neha Gupta', subject: 'Sanskrit', classValue: '7th', password: 'password123' },
     ],
     students: generateStudents('1', 5)
   },
@@ -89,20 +80,10 @@ const seedSchools = [
       schoolName: 'City Public School, Jaipur',
     },
     teachers: [
-      {
-        teacherId: 'T201',
-        name: 'Ramesh Patel',
-        subject: 'Physics',
-        classValue: '12th',
-        password: 'password123',
-      },
-      {
-        teacherId: 'T202',
-        name: 'Kavita Verma',
-        subject: 'English',
-        classValue: '9th',
-        password: 'password123',
-      },
+      { teacherId: 'T201', name: 'Ramesh Patel', subject: 'Physics', classValue: '12th', password: 'password123' },
+      { teacherId: 'T202', name: 'Kavita Verma', subject: 'English', classValue: '9th', password: 'password123' },
+      { teacherId: 'T203', name: 'Vikram Sharma', subject: 'Physical Education', classValue: 'all', password: 'password123' },
+      { teacherId: 'T204', name: 'Pooja Verma', subject: 'Drawing / Art', classValue: 'all', password: 'password123' },
     ],
     students: generateStudents('2', 5)
   },
@@ -113,13 +94,10 @@ const seedSchools = [
       schoolName: 'Adarsh Vidya Mandir, Sikar',
     },
     teachers: [
-      {
-        teacherId: 'T301',
-        name: 'Suresh Choudhary',
-        subject: 'Hindi',
-        classValue: '8th',
-        password: 'password123',
-      }
+      { teacherId: 'T301', name: 'Suresh Choudhary', subject: 'Hindi', classValue: '8th', password: 'password123' },
+      { teacherId: 'T302', name: 'Ramesh Rao', subject: 'General Knowledge', classValue: '5th', password: 'password123' },
+      { teacherId: 'T303', name: 'Sneha Jain', subject: 'Moral Science', classValue: '6th', password: 'password123' },
+      { teacherId: 'T304', name: 'Rahul Desai', subject: 'Other', classValue: 'all', password: 'password123' },
     ],
     students: generateStudents('3', 5)
   }
@@ -329,14 +307,16 @@ async function run() {
       mdContent += `**Principal Password:** \`331022\`\n\n`;
 
       mdContent += `### 👨‍🏫 Teachers\n`;
-      mdContent += `| Teacher Name | Teacher ID | Subject | Class | Password |\n|---|---|---|---|---|\n`;
+      mdContent += `> [!IMPORTANT]\n`;
+      mdContent += `> **SUBJECT SELECTION REQUIRED:** To log in successfully, you **must** select the exact subject listed below in the login dropdown.\n\n`;
+      mdContent += `| Teacher Name | Teacher ID | Subject (Select this in Dropdown) | Class | Password |\n|---|---|---|---|---|\n`;
       schoolObj.teachers.forEach(t => {
-        mdContent += `| ${t.name} | \`${t.teacherId}\` | ${t.subject} | ${t.classValue} | \`${t.password}\` |\n`;
+        mdContent += `| ${t.name} | \`${t.teacherId}\` | **${t.subject}** | ${t.classValue} | \`${t.password}\` |\n`;
       });
       mdContent += `\n`;
 
       mdContent += `### 👨‍👩‍👦 Students (5 Students per Class)\n`;
-      mdContent += `*All students have the password: \`331022@ankit\`*\n\n`;
+      mdContent += `*All students have the password: \`331022@aman\`*\n\n`;
 
       classes.forEach(c => {
         mdContent += `#### Class ${c}\n`;
