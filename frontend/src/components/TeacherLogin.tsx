@@ -49,8 +49,13 @@ export function TeacherLogin({ onBack }: { onBack: () => void }) {
       await new Promise((res) => setTimeout(res, 600));
       loginAsTeacher(teacherWithSubject, school!);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
-      console.error(err);
+      const errorMsg = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      setError(errorMsg);
+      console.error("Login Error:", err);
+      // Added an explicit popup alert so the user definitely sees the validation is working
+      if (errorMsg.includes('galat subject') || errorMsg.includes('subject')) {
+        alert("⚠️ GALAT SUBJECT! ⚠️\n\n" + errorMsg + "\n\nAapne jo details daali wo database se match nahi kar rahi.");
+      }
     } finally {
       setLoading(false);
     }
