@@ -11,6 +11,7 @@ export const pool = mysql.createPool({
   user: process.env.MYSQL_USER ?? 'root',
   password: process.env.MYSQL_PASSWORD ?? '',
   database: process.env.MYSQL_DATABASE ?? 'school_portal',
+  ssl: process.env.MYSQL_HOST && process.env.MYSQL_HOST !== 'localhost' ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
