@@ -1,5 +1,5 @@
 /**
- * Initialize MySQL database: create DB, tables, and seed multi-tenant data.
+ * Initialize MySQL database: create DB, tables, and seed real school data.
  * Run: npm run db:init
  */
 import mysql from 'mysql2/promise';
@@ -19,40 +19,112 @@ const database = process.env.MYSQL_DATABASE ?? 'school_portal';
 
 const classes = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
 
-// Array of common authentic Indian names
-const firstNames = ['Aarav', 'Vivaan', 'Aditya', 'Vihaan', 'Arjun', 'Sai', 'Reyansh', 'Ayaan', 'Krishna', 'Ishaan', 'Shaurya', 'Atharv', 'Dhruv', 'Kabir', 'Rishi', 'Ananya', 'Diya', 'Suhana', 'Pari', 'Avni', 'Aadhya', 'Khushi', 'Neha', 'Riya', 'Aarti', 'Anjali', 'Kunal', 'Rohan', 'Sneha', 'Simran', 'Pooja', 'Vikram', 'Siddharth', 'Nisha', 'Rahul', 'Anita', 'Sunil', 'Meena', 'Rakesh', 'Suresh', 'Kiran', 'Deepak', 'Geeta', 'Vijay', 'Seema', 'Rajesh', 'Preeti', 'Sanjay', 'Mukesh', 'Renu'];
-const lastNames = ['Sharma', 'Verma', 'Singh', 'Patel', 'Kumar', 'Kapoor', 'Chauhan', 'Mehta', 'Gupta', 'Jain', 'Bansal', 'Agarwal', 'Yadav', 'Mishra', 'Reddy', 'Das', 'Roy', 'Sen', 'Srivastava', 'Choudhary', 'Rathore', 'Rajput', 'Joshi', 'Trivedi', 'Pandey', 'Dubey', 'Tiwari', 'Shukla', 'Bhatt', 'Nair', 'Menon', 'Pillai', 'Rao', 'Gowda', 'Naidu', 'Iyer', 'Desai', 'Kulkarni', 'Deshmukh', 'Joshi', 'Patil', 'Kadam', 'Bhosale', 'Pawar', 'More', 'Gaikwad', 'Shinde', 'Jadhav', 'Kale', 'Wagh'];
+// ==================== REAL STUDENT DATA ====================
+const realStudents = {
+  "1st": [
+    "Devendra Ruhela", "Arvind", "Komal Mev", "Minakshi", "Monika",
+    "Nipeksha Nayak", "Pramod Kumar", "Pratik Sain", "Rajshree", "Riya Kumari",
+    "Ronit", "Ruchika", "Sandhya", "Yash Sain"
+  ],
+  "2nd": [
+    "Aaditya Prajapat", "Aarya Prajapat", "Anushka", "Babita", "Devraj",
+    "Divyanshi", "Gajannad Poonia", "Harshit", "Harshit", "Narendra Kumar",
+    "Naresh", "Natisha Sain", "Nikita Prajapat", "Pooja Nayak", "Rajesh",
+    "Smart", "Sarita", "Shivangi", "Shivraj", "Tanavi", "Varsha", "Vikram", "Sahil"
+  ],
+  "3rd": [
+    "Aaina", "Aayana", "Anu", "Arvind", "Bhumika", "Jayvardhan", "Manjeet",
+    "Mukesh", "Parsa", "Pooja", "Priyanshu", "Ramswaroop", "Roshani", "Sarika",
+    "Shrmila", "Yogesh", "Yogesh Kumar", "Yogita"
+  ],
+  "4th": [
+    "Shakina", "Suman", "Virat Singh", "Aaditya", "Anshu Kanwar", "Aryan",
+    "Avani", "Bhawana", "Dropadi", "Kamlesh Nayak", "Lalita", "Mamta", "Pinki",
+    "Piyush", "Pooja Sain", "Sandhya"
+  ],
+  "5th": [
+    "Aaditya", "Bhagyashree", "Chayna", "Himanti", "Kris", "Lakshy",
+    "Lalita Nayak", "Manish", "Mohit Kumar", "Monika", "Monika", "Norang",
+    "Pooja", "Priyatam", "Raj", "Ravina", "Renu", "Seema", "Sonakshi",
+    "Sonakshi", "Sultan"
+  ],
+  "6th": [
+    "Aarti", "Anju", "Anushka", "Babita", "Hemant Prajapat", "Lalita",
+    "Lucky", "Naksha", "Pankaj Sain", "Prince", "Rajani", "Ravina", "Riya",
+    "Tanushree", "Vikram"
+  ],
+  "7th": [
+    "Anil", "Arjun", "Bhawna", "Ekta", "Kanchan", "Kavita", "Kiran",
+    "Kumari Kailash", "Mahipal", "Maya", "Muna", "Piyush", "Pooja",
+    "Sandeep", "Sangita", "Santra", "Vijaypal", "Vijendra Singh", "Mohit Sharma"
+  ],
+  "8th": [
+    "Aaina", "Ashish", "Daksh", "Dropadi Ruliya", "Kanhaiya Lal", "Kapil",
+    "Manisha Kanwar", "Pankaj", "Pankaj", "Payal", "Pooja", "Pratigya",
+    "Rahul", "Rakesh", "Rinku", "Rohit", "Rohitash Nayak", "Ronak Nai", "Rughaveer"
+  ],
+  "9th": [
+    "Aaina Prajapat", "Anand Kumar", "Bhavesh Prajapat", "Daleep Kumar Nayak",
+    "Gajanand", "Harish Prajapat", "Jayprakash", "Komal", "Komal", "Kumkum",
+    "Mahesh", "Manisha", "Mohit", "Nisha", "Nitika", "Nitu Kumari", "Poonam",
+    "Pradeep Kumar Nayak", "Priyanka", "Ranveer Singh", "Sangita", "Sunil Kumar",
+    "Sunita", "Surya Prakash"
+  ],
+  "10th": [
+    "Amit Kumar", "Anita", "Babita Kumari", "Kailash Kumar", "Khushi",
+    "Monika", "Nitu Kumari", "Pankaj Meghwal", "Poonam Kumari", "Preetam Kumar",
+    "Rohitash"
+  ],
+  "11th": [
+    "Aman Kumar", "Ankit", "Ayana Kanwar", "Kalpna Nayak", "Kavita",
+    "Khushbu", "Monika Prajapat", "Narendra", "Nikita", "Pankaj Kanwar",
+    "Poonam", "Pradeep", "Punam", "Pushpa Prajapat", "Rajendra Kumar",
+    "Rohit", "Rohit Mahla", "Rohitash Nayak", "Sandeep", "Sandeep Nayak",
+    "Suman Kumari", "Supyar", "Tamanna"
+  ],
+  "12th": [
+    "Anand", "Ankit", "Ankita", "Babita", "Deepika", "Jashoda", "Kavita",
+    "Komal Prajapat", "Lalchand", "Manisha", "Narendra Kumar", "Nirabhay Nyol",
+    "Rotash", "Sajni", "Samiksha", "Sharwan Kumar", "Sonu", "Sonu Kumari",
+    "Sunil Kumar", "Sunita", "Swati"
+  ]
+};
 
-function getRandomName() {
-  const first = firstNames[Math.floor(Math.random() * firstNames.length)];
-  const last = lastNames[Math.floor(Math.random() * lastNames.length)];
-  return `${first} ${last}`;
-}
+// ==================== REAL TEACHERS ====================
+const realTeachers = [
+  { teacherId: 'T102', name: 'AMIT SINGH', subject: 'History', classValue: '12th', password: 'password123' },
+  { teacherId: 'T115', name: 'AMIT SINGH', subject: 'English', classValue: '12th', password: 'password123' },
+  { teacherId: 'T103', name: 'MANPHOOL SINGH MAHALA', subject: 'Hindi', classValue: '12th', password: 'password123' },
+  { teacherId: 'T104', name: 'ANJU', subject: 'Geography', classValue: '11th', password: 'password123' },
+  { teacherId: 'T105', name: 'BUDHRAM KUMAWAT', subject: 'Mathematics', classValue: '10th', password: 'password123' },
+  { teacherId: 'T106', name: 'ASHOK KUMAR', subject: 'English', classValue: '11th', password: 'password123' },
+  { teacherId: 'T107', name: 'INDIRA', subject: 'Hindi', classValue: '10th', password: 'password123' },
+  { teacherId: 'T108', name: 'SANTOSH SAMOTA', subject: 'Hindi', classValue: '5th', password: 'password123' },
+  { teacherId: 'T109', name: 'RAMESH KUMAR CHOUDHARY', subject: 'Environment', classValue: '5th', password: 'password123' },
+  { teacherId: 'T110', name: 'RAKESH KUMAR SISODIA', subject: 'English', classValue: '5th', password: 'password123' },
+  { teacherId: 'T111', name: 'MONIKA MEENA', subject: 'Hindi', classValue: '5th', password: 'password123' },
+  { teacherId: 'T112', name: 'REENA KUMARI', subject: 'Mathematics', classValue: '5th', password: 'password123' },
+  { teacherId: 'T113', name: 'CHANDERKANT SWAMI', subject: 'Physical Education', classValue: 'all', password: 'password123' },
+  { teacherId: 'T114', name: 'MANISH SAIN', subject: 'Computer Science', classValue: 'all', password: 'password123' },
+];
 
-function generateStudents(prefix, countPerClass) {
+function generateStudentsFromReal() {
   let students = [];
-  let srCounter = parseInt(prefix + '001');
-
-  // To ensure uniqueness, keep tracking names
-  const assignedNames = new Set();
+  let srCounter = 1001;
 
   classes.forEach(cls => {
-    for (let i = 0; i < countPerClass; i++) {
-
-      let fullName = getRandomName();
-      while (assignedNames.has(fullName)) {
-        fullName = getRandomName();
-      }
-      assignedNames.add(fullName);
-
+    const classKey = cls.replace(/(\d+)(st|nd|rd|th)/, '$1');
+    const suffix = cls.replace(/\d+/, '');
+    const names = realStudents[classKey + suffix] || realStudents[cls] || [];
+    names.forEach(name => {
       students.push({
         srNumber: srCounter.toString(),
-        name: fullName,
+        name: name.trim(),
         classValue: cls,
         password: '331022@aman'
       });
       srCounter++;
-    }
+    });
   });
   return students;
 }
@@ -60,46 +132,12 @@ function generateStudents(prefix, countPerClass) {
 const seedSchools = [
   {
     school: {
-      principalName: 'Shri Vinod Dhobi',
+      principalName: 'VINOD KUMAR DHOBI',
       udiseCode: '08123456789',
-      schoolName: 'Govt. Senior Secondary School, Churu',
-    },
-    teachers: [
-      { teacherId: 'T101', name: 'Manish Sain', subject: 'Computer Science', classValue: '11th', password: 'password123' },
-      { teacherId: 'T102', name: 'Sunita Sharma', subject: 'Mathematics', classValue: '10th', password: 'password123' },
-      { teacherId: 'T103', name: 'Amit Kumar', subject: 'Science', classValue: '9th', password: 'password123' },
-      { teacherId: 'T104', name: 'Rajesh Singh', subject: 'Social Science', classValue: '8th', password: 'password123' },
-      { teacherId: 'T105', name: 'Neha Gupta', subject: 'Sanskrit', classValue: '7th', password: 'password123' },
-    ],
-    students: generateStudents('1', 5)
-  },
-  {
-    school: {
-      principalName: 'Mrs. Anita Desai',
-      udiseCode: '08987654321',
-      schoolName: 'City Public School, Jaipur',
-    },
-    teachers: [
-      { teacherId: 'T201', name: 'Ramesh Patel', subject: 'Physics', classValue: '12th', password: 'password123' },
-      { teacherId: 'T202', name: 'Kavita Verma', subject: 'English', classValue: '9th', password: 'password123' },
-      { teacherId: 'T203', name: 'Vikram Sharma', subject: 'Physical Education', classValue: 'all', password: 'password123' },
-      { teacherId: 'T204', name: 'Pooja Verma', subject: 'Drawing / Art', classValue: 'all', password: 'password123' },
-    ],
-    students: generateStudents('2', 5)
-  },
-  {
-    school: {
-      principalName: 'Dr. R.K. Meena',
-      udiseCode: '08555555555',
       schoolName: 'Adarsh Vidya Mandir, Sikar',
     },
-    teachers: [
-      { teacherId: 'T301', name: 'Suresh Choudhary', subject: 'Hindi', classValue: '8th', password: 'password123' },
-      { teacherId: 'T302', name: 'Ramesh Rao', subject: 'General Knowledge', classValue: '5th', password: 'password123' },
-      { teacherId: 'T303', name: 'Sneha Jain', subject: 'Moral Science', classValue: '6th', password: 'password123' },
-      { teacherId: 'T304', name: 'Rahul Desai', subject: 'Other', classValue: 'all', password: 'password123' },
-    ],
-    students: generateStudents('3', 5)
+    teachers: realTeachers,
+    students: generateStudentsFromReal()
   }
 ];
 
@@ -256,16 +294,12 @@ async function run() {
     console.log('Schema applied');
 
     // CLEAR ALL EXISTING DATA FOR FRESH SEED
-    console.log('Clearing old student and mark data to regenerate nice names...');
+    console.log('Clearing old data for fresh seed...');
     await conn.query(`DELETE FROM marks`);
     await conn.query(`DELETE FROM students`);
     await conn.query(`DELETE FROM homework`);
-
-    // We can also clear teachers and schools 
-    // to cleanly re-create them all.
     await conn.query('DELETE FROM teachers');
     await conn.query('DELETE FROM schools');
-
 
     for (const item of seedSchools) {
       const schoolId = await ensureSchool(conn, item.school);
@@ -288,22 +322,21 @@ async function run() {
     }
     console.log('All seed data inserted successfully!');
 
-    console.log('\n--- HACKATHON DEMO CREDENTIALS ---');
-    console.log('1. Govt. Senior Secondary School, Churu');
-    console.log('   Teacher Login => ID: T101 | Name: Manish Sain | Sub: Computer Science | Class: 11th');
-    console.log('   Student Login => Name: (Check LOGIN_DETAILS.md) | SR No: 1001');
-    console.log('\n2. City Public School, Jaipur');
-    console.log('   Teacher Login => ID: T201 | Name: Ramesh Patel | Sub: Physics | Class: 12th');
-    console.log('   Student Login => Name: (Check LOGIN_DETAILS.md) | SR No: 2001');
+    console.log('\n--- LOGIN CREDENTIALS ---');
+    console.log('School: Adarsh Vidya Mandir, Sikar');
+    console.log('Principal: VINOD KUMAR DHOBI | Password: 331022');
+    console.log('Vice Principal: SURESH KUMAR DHAKA | Teacher ID: T101');
+    console.log('Student Password: 331022@aman');
     console.log('----------------------------------\n');
 
     // Generating the markdown file automatically via script
     const fs = await import('fs/promises');
-    let mdContent = `# 🔐 School Portal: Complete Login Credentials\n\nThis document contains a comprehensive list of all generated test credentials for the School Portal, specifically breaking down every single Parent/Student login generated by the database seed script.\n\n---\n\n`;
+    let mdContent = `# 🔐 School Portal: Complete Login Credentials\n\nThis document contains all login credentials for Adarsh Vidya Mandir, Sikar.\n\n---\n\n`;
 
     seedSchools.forEach((schoolObj, sIdx) => {
-      mdContent += `## 🏫 School ${sIdx + 1}: ${schoolObj.school.schoolName}\n`;
+      mdContent += `## 🏫 ${schoolObj.school.schoolName}\n`;
       mdContent += `**UDISE Code:** \`${schoolObj.school.udiseCode}\`\n`;
+      mdContent += `**Principal:** ${schoolObj.school.principalName}\n`;
       mdContent += `**Principal Password:** \`331022\`\n\n`;
 
       mdContent += `### 👨‍🏫 Teachers\n`;
@@ -315,22 +348,24 @@ async function run() {
       });
       mdContent += `\n`;
 
-      mdContent += `### 👨‍👩‍👦 Students (5 Students per Class)\n`;
+      mdContent += `### 👨‍👩‍👦 Students\n`;
       mdContent += `*All students have the password: \`331022@aman\`*\n\n`;
 
       classes.forEach(c => {
-        mdContent += `#### Class ${c}\n`;
         const classStudents = schoolObj.students.filter(stu => stu.classValue === c);
-        classStudents.forEach((stu, sIndex) => {
-          mdContent += `${sIndex + 1}. **Name:** ${stu.name} | **SR No:** ${stu.srNumber}\n`;
-        });
-        mdContent += `\n`;
+        if (classStudents.length > 0) {
+          mdContent += `#### Class ${c} (${classStudents.length} students)\n`;
+          classStudents.forEach((stu, sIndex) => {
+            mdContent += `${sIndex + 1}. **Name:** ${stu.name} | **SR No:** ${stu.srNumber}\n`;
+          });
+          mdContent += `\n`;
+        }
       });
       mdContent += `---\n\n`;
     });
 
     await fs.writeFile(join(__dirname, '../LOGIN_DETAILS.md'), mdContent, 'utf8');
-    console.log('Successfully generated LOGIN_DETAILS.md with all new authentic Indian names!');
+    console.log('Successfully generated LOGIN_DETAILS.md!');
 
   } catch (err) {
     console.error('Error:', err.message);

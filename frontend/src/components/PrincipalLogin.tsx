@@ -35,7 +35,6 @@ export function PrincipalLogin({ onBack }: { onBack: () => void }) {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!school) return;
 
         setLoading(true);
         setError('');
@@ -45,7 +44,6 @@ export function PrincipalLogin({ onBack }: { onBack: () => void }) {
                 schoolId: school.id,
                 password: password.trim()
             });
-            // Delay for dramatic entry
             await new Promise((res) => setTimeout(res, 800));
             loginAsPrincipal(principalUser, school);
         } catch (err) {
@@ -111,7 +109,7 @@ export function PrincipalLogin({ onBack }: { onBack: () => void }) {
                         transition={{ delay: 0.8 }}
                         className="text-center text-purple-600/80 font-bold tracking-wide uppercase text-xs"
                     >
-                        {school?.school_name}
+                        {school.school_name}
                     </motion.p>
                 </div>
 
@@ -123,10 +121,10 @@ export function PrincipalLogin({ onBack }: { onBack: () => void }) {
                         className="bg-fuchsia-50/50 p-4 rounded-2xl border border-fuchsia-100 mb-6 flex items-center gap-4"
                     >
                         <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-fuchsia-600 font-bold shadow-sm">
-                            {school?.principal_name?.charAt(0) || 'P'}
+                            {school.principal_name?.charAt(0) || 'P'}
                         </div>
                         <p className="text-sm text-fuchsia-900 font-bold">
-                            Welcome, {school?.principal_name}
+                            Welcome, {school.principal_name}
                         </p>
                     </motion.div>
 

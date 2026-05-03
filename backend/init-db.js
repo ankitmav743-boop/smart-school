@@ -63,7 +63,7 @@ const seedSchools = [
     school: {
       principalName: 'Shri Vinod Dhobi',
       udiseCode: '08123456789',
-      schoolName: 'Govt. Senior Secondary School, Churu',
+      schoolName: 'Govt Senior Secondary School Kadiya',
     },
     teachers: [
       {
@@ -82,47 +82,6 @@ const seedSchools = [
       },
     ],
     students: generateStudents('1', 5)
-  },
-  {
-    school: {
-      principalName: 'Mrs. Anita Desai',
-      udiseCode: '08987654321',
-      schoolName: 'City Public School, Jaipur',
-    },
-    teachers: [
-      {
-        teacherId: 'T201',
-        name: 'Ramesh Patel',
-        subject: 'Physics',
-        classValue: '12th',
-        password: 'password123',
-      },
-      {
-        teacherId: 'T202',
-        name: 'Kavita Verma',
-        subject: 'English',
-        classValue: '9th',
-        password: 'password123',
-      },
-    ],
-    students: generateStudents('2', 5)
-  },
-  {
-    school: {
-      principalName: 'Dr. R.K. Meena',
-      udiseCode: '08555555555',
-      schoolName: 'Adarsh Vidya Mandir, Sikar',
-    },
-    teachers: [
-      {
-        teacherId: 'T301',
-        name: 'Suresh Choudhary',
-        subject: 'Hindi',
-        classValue: '8th',
-        password: 'password123',
-      }
-    ],
-    students: generateStudents('3', 5)
   }
 ];
 
@@ -233,7 +192,7 @@ async function addFakeHomeworkAndMarks(conn, schoolId, teacherId, studentId, tea
     'Computer Science': 'Python mein calculator program banao - add, subtract, multiply, divide.',
   };
 
-  const exams = ['Quarterly Exam', 'Half Yearly', 'Pre Board', 'Final Exams'];
+  const exams = ['First Test', 'Second Test', 'Third Test', 'Half Yearly Exam', 'Yearly Exam'];
 
   for (const subject of allSubjects) {
     // --- HOMEWORK: Har subject ka ek homework ---

@@ -72,11 +72,11 @@ export function ParentLogin({ onBack }: ParentLoginProps) {
         classValue,
         srNumber,
         password,
-        schoolId: school!.id,
+        schoolId: school.id,
       });
       // Small artificial delay to allow button animation to play out
       await new Promise((resolve) => setTimeout(resolve, 800));
-      loginAsParent(data, school!);
+      loginAsParent(data, school);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
       console.error(err);

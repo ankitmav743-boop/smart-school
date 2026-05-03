@@ -459,6 +459,10 @@ export function TeacherDashboard() {
                       <label className="block text-sm font-bold text-slate-600 mb-2">Exam Type</label>
                       <select value={examType} onChange={(e) => setExamType(e.target.value)} className="w-full px-4 py-4 border-2 border-slate-200 rounded-xl outline-none font-bold bg-slate-50">
                         <option value="First Test">First Test</option>
+                        <option value="Second Test">Second Test</option>
+                        <option value="Third Test">Third Test</option>
+                        <option value="Today Class Test">Today Class Test</option>
+                        <option value="Weekly Test">Weekly Test</option>
                         <option value="Half Yearly Exam">Half Yearly</option>
                         <option value="Yearly Exam">Finals</option>
                       </select>

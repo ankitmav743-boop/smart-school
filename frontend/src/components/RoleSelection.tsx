@@ -1,6 +1,5 @@
-import { GraduationCap, School as SchoolIcon, Users, Building2, Info } from 'lucide-react';
+import { GraduationCap, Users, Building2, Info } from 'lucide-react';
 import { motion, Variants } from 'framer-motion';
-import { useAuth } from '../context/AuthContext';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -27,7 +26,6 @@ const cardVariants: Variants = {
   tap: { scale: 0.95 }
 };
 
-// Kinetic Text Component
 const KineticText = ({ text, className = "" }: { text: string; className?: string }) => {
   const words = text.split(" ");
 
@@ -67,8 +65,6 @@ export function RoleSelection({
   onSelectRole: (role: 'teacher' | 'parent' | 'principal') => void;
   onShowAbout: () => void;
 }) {
-  const { availableSchools, school, setSchool } = useAuth();
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-slate-50 to-blue-100 flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
 
@@ -118,7 +114,7 @@ export function RoleSelection({
       <div className="text-center mb-12 relative z-10 perspective-1000 mt-12 md:mt-4">
 
         <KineticText
-          text="Integrated School Portal"
+          text="Govt Senior Secondary School Kadiya"
           className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 mb-6 drop-shadow-sm"
         />
         <motion.p
@@ -127,7 +123,7 @@ export function RoleSelection({
           transition={{ delay: 0.8, duration: 0.8 }}
           className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto font-medium"
         >
-          Select your school and login to access your dashboard, view student progress, and manage daily activities.
+          Login to access your dashboard, view student progress, and manage daily activities.
         </motion.p>
       </div>
 
@@ -135,48 +131,19 @@ export function RoleSelection({
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
-        className="relative z-10 bg-white/80 backdrop-blur-xl p-8 md:p-12 rounded-[2.5rem] shadow-2xl border border-white/50 w-full max-w-6xl space-y-10"
+        className="relative z-10 bg-white/80 backdrop-blur-xl p-8 md:p-12 rounded-[2.5rem] shadow-2xl border border-white/50 w-full max-w-4xl space-y-10"
       >
-        {/* Step 1: School Selection */}
-        <div className="border-b border-slate-200/60 pb-10">
-          <label className="flex items-center gap-3 text-xl font-bold text-slate-800 mb-6">
-            <span className="bg-indigo-100 p-2 rounded-xl text-indigo-600"><SchoolIcon className="w-6 h-6" /></span>
-            Step 1: Select Your School
-          </label>
-          <div className="relative group max-w-2xl">
-            <select
-              className="w-full text-lg p-5 border-2 border-slate-200 bg-white/50 backdrop-blur-sm shadow-sm rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-300 outline-none text-slate-700 font-bold cursor-pointer hover:border-indigo-300 appearance-none"
-              value={school?.udise_code || ''}
-              onChange={(e) => {
-                const selected = availableSchools.find(s => s.udise_code === e.target.value);
-                setSchool(selected || null);
-              }}
-            >
-              <option value="" disabled>-- Choose a School from the List --</option>
-              {availableSchools.map((s) => (
-                <option key={s.id} value={s.udise_code} className="font-medium text-slate-800">
-                  {s.school_name} (UDISE: {s.udise_code})
-                </option>
-              ))}
-            </select>
-            {/* Custom dropdown arrow */}
-            <div className="absolute inset-y-0 right-0 flex items-center px-6 pointer-events-none text-slate-400 group-hover:text-indigo-500 transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Step 2: Role Selection */}
-        <div className={`transition-all duration-700 ${!school ? 'opacity-40 blur-[2px] pointer-events-none' : 'opacity-100 blur-none'}`}>
+        {/* Role Selection */}
+        <div>
           <label className="flex items-center gap-3 text-xl font-bold text-slate-800 mb-8">
             <span className="bg-blue-100 p-2 rounded-xl text-blue-600"><Users className="w-6 h-6" /></span>
-            Step 2: Continue As
+            Continue As
           </label>
 
           <motion.div
             variants={containerVariants}
             initial="hidden"
-            animate={school ? "show" : "hidden"}
+            animate="show"
             className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8"
           >
             {/* Principal Card */}

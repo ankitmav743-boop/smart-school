@@ -174,6 +174,7 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
                             </motion.h1>
                         </div>
 
+
                         {/* Scroll Indicator */}
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -220,25 +221,45 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
                             </div>
                         </TiltCard>
 
-                        <div className="space-y-8">
-                            <TiltCard delay={0.4}>
-                                <h3 className="text-2xl font-bold mb-4 text-white/90 flex items-center gap-3">
-                                    <BookOpen className="w-6 h-6 text-cyan-400" /> Education
-                                </h3>
-                                <p className="text-lg text-white/70 leading-relaxed font-light">
-                                    <TypewriterText text="Currently studying at Govt. S. S. School Kadiya, Churu, Rajasthan in class 11th. Alongside school, learning Web Development through CodeYogi to build real-world technical skills and prepare for a future in technology." />
-                                </p>
-                            </TiltCard>
+                        {/* Profile Image on Right Side */}
+                        <motion.div
+                            initial={{ opacity: 0, x: 50 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.4, duration: 1, type: "spring" }}
+                            className="relative w-full h-full min-h-[400px] flex items-center justify-center md:sticky md:top-32"
+                        >
+                            {/* Epic Glow Behind Image */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 md:w-[400px] md:h-[400px] bg-gradient-to-tr from-cyan-500/20 to-blue-600/20 rounded-full blur-[80px] -z-10 animate-pulse"></div>
+                            
+                            <img 
+                                src="/developer.png" 
+                                alt="Ankit Kumar" 
+                                className="w-full h-auto max-h-[600px] object-contain relative z-10 drop-shadow-[0_15px_35px_rgba(34,211,238,0.3)]"
+                                style={{ WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)', maskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)' }}
+                            />
+                        </motion.div>
+                    </div>
 
-                            <TiltCard delay={0.6}>
-                                <h3 className="text-2xl font-bold mb-4 text-white/90 flex items-center gap-3">
-                                    <Heart className="w-6 h-6 text-pink-400" /> Interests
-                                </h3>
-                                <p className="text-lg text-white/70 leading-relaxed font-light">
-                                    I have been passionate about technology since childhood, especially the design side of it. I love crafting beautiful user interfaces and bringing ideas to life on the web. Outside of coding, I enjoy playing football and exploring how new technologies like 3D Printing work. Building this School Management Portal gave me hands-on experience of how real-world full-stack applications are built from scratch.
-                                </p>
-                            </TiltCard>
-                        </div>
+                    {/* Section 1.5: Education & Interests (Moved down) */}
+                    <div className="grid md:grid-cols-2 gap-8 items-start">
+                        <TiltCard delay={0.2}>
+                            <h3 className="text-2xl font-bold mb-4 text-white/90 flex items-center gap-3">
+                                <BookOpen className="w-6 h-6 text-cyan-400" /> Education
+                            </h3>
+                            <p className="text-lg text-white/70 leading-relaxed font-light">
+                                <TypewriterText text="Currently studying at Govt. S. S. School Kadiya, Churu, Rajasthan in class 11th. Alongside school, learning Web Development through CodeYogi to build real-world technical skills and prepare for a future in technology." />
+                            </p>
+                        </TiltCard>
+
+                        <TiltCard delay={0.4}>
+                            <h3 className="text-2xl font-bold mb-4 text-white/90 flex items-center gap-3">
+                                <Heart className="w-6 h-6 text-pink-400" /> Interests
+                            </h3>
+                            <p className="text-lg text-white/70 leading-relaxed font-light">
+                                I have been passionate about technology since childhood, especially the design side of it. I love crafting beautiful user interfaces and bringing ideas to life on the web. Outside of coding, I enjoy playing football and exploring how new technologies like 3D Printing work. Building this School Management Portal gave me hands-on experience of how real-world full-stack applications are built from scratch.
+                            </p>
+                        </TiltCard>
                     </div>
 
                     {/* Section 2: Hobbies & Journey */}
@@ -278,7 +299,7 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
                             <h3 className="text-2xl font-bold mb-6 text-white/90">Journey to Coding</h3>
                             <div className="prose prose-invert">
                                 <p className="text-lg text-white/70 leading-relaxed font-light">
-                                    I came to know about <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 font-bold">CodeYogi</span> through my school, Govt. s. s. school kadiya.
+                                    I came to know about <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 font-bold">CodeYogi</span> through my school, Govt Senior Secondary School Kadiya.
                                 </p>
                                 <p className="text-lg text-white/70 leading-relaxed font-light mt-4">
                                     Thanks to CodeYogi, I am gaining confidence in coding and building a strong foundation for my future in technology.

@@ -31,14 +31,14 @@ export function PrincipalDashboard() {
             setLoading(true);
             try {
                 const classStudents = await getStudents(principal.id, selectedClass);
-                const limitedStudents = classStudents.slice(0, 8);
-                setStudents(limitedStudents);
+                // Load all students
+                setStudents(classStudents);
 
                 const classHomework = await getHomeworkByClass(principal.id, selectedClass);
                 setHomeworkList(classHomework || []);
 
-                if (limitedStudents.length > 0) {
-                    const studentIds = limitedStudents.map(s => s.id);
+                if (classStudents.length > 0) {
+                    const studentIds = classStudents.map(s => s.id);
                     const classMarks = await getMarksByStudentIds(studentIds);
                     setMarks(classMarks);
                 } else {
@@ -66,6 +66,42 @@ export function PrincipalDashboard() {
             subject,
             average: Number((data.total / data.count).toFixed(1))
         }));
+    };
+
+    const getMarksTableData = () => {
+        const studentMap = new Map<string, { name: string; marksMap: Record<string, { marks: number; total: number; grade: string }>; totalObtained: number; totalPossible: number }>();
+        const subjectSet = new Set<string>();
+
+        marks.forEach(m => {
+            subjectSet.add(m.subject);
+            if (!studentMap.has(m.student_id)) {
+                studentMap.set(m.student_id, { name: m.student_name, marksMap: {}, totalObtained: 0, totalPossible: 0 });
+            }
+            const student = studentMap.get(m.student_id)!;
+            student.marksMap[m.subject] = {
+                marks: m.marks,
+                total: m.total_marks,
+                grade: m.grade
+            };
+            student.totalObtained += m.marks;
+            student.totalPossible += m.total_marks;
+        });
+
+        return {
+            studentsData: Array.from(studentMap.values()),
+            subjects: Array.from(subjectSet).sort()
+        };
+    };
+
+    const getGroupedHomework = () => {
+        const map = new Map<string, Homework[]>();
+        homeworkList.forEach(hw => {
+            if (!map.has(hw.subject)) {
+                map.set(hw.subject, []);
+            }
+            map.get(hw.subject)!.push(hw);
+        });
+        return Array.from(map.entries());
     };
 
     if (!selectedClass) {
@@ -148,146 +184,169 @@ export function PrincipalDashboard() {
                     </div>
                 ) : (
                     <AnimatePresence mode="wait">
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
 
-                            {/* Student Roster (Left Rail) */}
-                            <motion.div variants={itemVariants} className="lg:col-span-1 bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden border border-purple-50 flex flex-col h-[600px]">
-                                <div className="bg-purple-50/50 p-6 border-b border-purple-100 flex items-center justify-between">
-                                    <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                                        <Users className="w-5 h-5 text-purple-600" /> Administrative Roster
-                                    </h2>
-                                    <span className="bg-white text-purple-700 px-3 py-1 rounded-lg text-xs font-black shadow-sm border border-purple-100 uppercase tracking-widest">
-                                        {students.length} Total
-                                    </span>
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                {/* Student Roster (Left Rail) */}
+                                <motion.div variants={itemVariants} className="lg:col-span-1 bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden border border-purple-50 flex flex-col h-[600px]">
+                                    <div className="bg-purple-50/50 p-6 border-b border-purple-100 flex items-center justify-between">
+                                        <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                                            <Users className="w-5 h-5 text-purple-600" /> Administrative Roster
+                                        </h2>
+                                        <span className="bg-white text-purple-700 px-3 py-1 rounded-lg text-xs font-black shadow-sm border border-purple-100 uppercase tracking-widest">
+                                            {students.length} Total
+                                        </span>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-2 hide-scrollbar">
+                                        {students.length === 0 ? (
+                                            <p className="p-8 text-slate-400 text-center font-medium">Class completely empty.</p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {students.map(student => (
+                                                    <motion.div whileHover={{ scale: 1.02 }} key={student.id} className="p-4 bg-slate-50/50 hover:bg-purple-50/80 rounded-2xl flex justify-between items-center group cursor-pointer border border-transparent hover:border-purple-100 transition-colors">
+                                                        <div>
+                                                            <p className="font-black text-slate-800 group-hover:text-purple-700 transition-colors">{student.name}</p>
+                                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">SR: {student.sr_number}</p>
+                                                        </div>
+                                                        <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center group-hover:bg-purple-600 transition-colors shadow-sm">
+                                                            <GraduationCap className="h-5 w-5 text-slate-400 group-hover:text-white" />
+                                                        </div>
+                                                    </motion.div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </motion.div>
+
+                                {/* Analytics Right Rail */}
+                                <div className="lg:col-span-2">
+                                    <motion.div variants={itemVariants} className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-purple-50 p-6 md:p-8 h-full flex flex-col">
+                                        <h2 className="text-xl font-black text-slate-800 mb-8 flex items-center gap-3">
+                                            <div className="bg-fuchsia-100 p-2 rounded-xl">
+                                                <BarChart2 className="w-5 h-5 text-fuchsia-600" />
+                                            </div>
+                                            Class Master Analytics
+                                        </h2>
+                                        {marks.length === 0 ? (
+                                            <div className="text-center py-16 text-slate-400 flex-1 flex items-center justify-center"><p className="font-medium text-lg">No examination data populated yet.</p></div>
+                                        ) : (
+                                            <div className="flex-1 w-full relative min-h-[450px]">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <BarChart data={getClassAverages()} margin={{ top: 20, right: 30, left: 0, bottom: 80 }}>
+                                                        <defs>
+                                                            <linearGradient id="colorAvg" x1="0" y1="0" x2="0" y2="1">
+                                                                <stop offset="0%" stopColor="#9333ea" stopOpacity={0.9} />
+                                                                <stop offset="100%" stopColor="#c084fc" stopOpacity={0.4} />
+                                                            </linearGradient>
+                                                        </defs>
+                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                        <XAxis dataKey="subject" tick={{ fill: '#64748b', fontWeight: 600, fontSize: 11 }} axisLine={false} tickLine={false} dy={10} angle={-35} textAnchor="end" interval={0} />
+                                                        <YAxis domain={[0, 100]} tick={{ fill: '#64748b', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                                                        <Tooltip cursor={{ fill: '#faf5ff' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontWeight: 600 }} formatter={(value: any) => [`${value}%`, 'Class Avg']} />
+                                                        <Bar dataKey="average" fill="url(#colorAvg)" radius={[8, 8, 0, 0]} animationDuration={1500} />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        )}
+                                    </motion.div>
                                 </div>
-                                <div className="flex-1 overflow-y-auto p-2 hide-scrollbar">
-                                    {students.length === 0 ? (
-                                        <p className="p-8 text-slate-400 text-center font-medium">Class completely empty.</p>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {students.map(student => (
-                                                <motion.div whileHover={{ scale: 1.02 }} key={student.id} className="p-4 bg-slate-50/50 hover:bg-purple-50/80 rounded-2xl flex justify-between items-center group cursor-pointer border border-transparent hover:border-purple-100 transition-colors">
-                                                    <div>
-                                                        <p className="font-black text-slate-800 group-hover:text-purple-700 transition-colors">{student.name}</p>
-                                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">SR: {student.sr_number}</p>
-                                                    </div>
-                                                    <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center group-hover:bg-purple-600 transition-colors shadow-sm">
-                                                        <GraduationCap className="h-5 w-5 text-slate-400 group-hover:text-white" />
-                                                    </div>
-                                                </motion.div>
-                                            ))}
+                            </div>
+
+                            {/* Full width Exam Feed */}
+                            <motion.div variants={itemVariants} className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 border border-purple-50">
+                                <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-3">
+                                    <div className="bg-blue-100 p-2 rounded-xl">
+                                        <BookOpen className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    Global Examination Feed
+                                </h2>
+                                {marks.length === 0 ? (
+                                    <div className="text-center py-12 text-slate-400"><p className="font-medium">No records found.</p></div>
+                                ) : (() => {
+                                    const { studentsData, subjects } = getMarksTableData();
+                                    return (
+                                        <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-sm">
+                                            <table className="w-full text-left border-collapse">
+                                                <thead className="bg-slate-50 border-b border-slate-100">
+                                                    <tr>
+                                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-widest border-r border-slate-100">Student Name</th>
+                                                        {subjects.map(sub => (
+                                                            <th key={sub} className="px-4 py-4 text-xs font-black text-slate-500 uppercase tracking-widest border-r border-slate-100 text-center">{sub}</th>
+                                                        ))}
+                                                        <th className="px-4 py-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center bg-emerald-50">Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100 bg-white">
+                                                    {studentsData.map((student, idx) => (
+                                                        <motion.tr whileHover={{ backgroundColor: '#f8fafc' }} key={idx} className="transition-colors group items-center">
+                                                            <td className="px-6 py-4 font-bold text-slate-800 border-r border-slate-100 whitespace-nowrap">{student.name}</td>
+                                                            {subjects.map(sub => {
+                                                                const markData = student.marksMap[sub];
+                                                                return (
+                                                                    <td key={sub} className="px-4 py-4 border-r border-slate-100 text-center align-middle">
+                                                                        {markData ? (
+                                                                            <div className="flex flex-col items-center justify-center">
+                                                                                <span className="font-black text-slate-800">{markData.marks}<span className="text-[10px] text-slate-400 font-bold ml-0.5">/{markData.total}</span></span>
+                                                                                <span className={`mt-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest inline-block ${markData.grade === 'Good' || markData.grade === 'A' ? 'bg-emerald-50 text-emerald-600' : markData.grade === 'Average' || markData.grade === 'B' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}`}>
+                                                                                    {markData.grade}
+                                                                                </span>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <span className="text-slate-300 font-medium">-</span>
+                                                                        )}
+                                                                    </td>
+                                                                );
+                                                            })}
+                                                            <td className="px-4 py-4 text-center align-middle bg-emerald-50">
+                                                                <div className="flex flex-col items-center justify-center">
+                                                                    <span className="font-black text-emerald-700">{student.totalObtained}<span className="text-[10px] text-emerald-500 font-bold ml-0.5">/{student.totalPossible}</span></span>
+                                                                    <span className="mt-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest inline-block bg-emerald-100 text-emerald-700">
+                                                                        {student.totalPossible > 0 ? ((student.totalObtained / student.totalPossible) * 100).toFixed(0) : 0}%
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                        </motion.tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
                                         </div>
-                                    )}
-                                </div>
+                                    );
+                                })()}
                             </motion.div>
 
-                            <div className="lg:col-span-2 space-y-8">
-                                {/* Bar Chart */}
-                                <motion.div variants={itemVariants} className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-purple-50 p-6 md:p-8">
-                                    <h2 className="text-xl font-black text-slate-800 mb-8 flex items-center gap-3">
-                                        <div className="bg-fuchsia-100 p-2 rounded-xl">
-                                            <BarChart2 className="w-5 h-5 text-fuchsia-600" />
-                                        </div>
-                                        Class Master Analytics
-                                    </h2>
-                                    {marks.length === 0 ? (
-                                        <div className="text-center py-16 text-slate-400"><p className="font-medium text-lg">No examination data populated yet.</p></div>
-                                    ) : (
-                                        <div className="h-80 w-full relative">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={getClassAverages()} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                                                    <defs>
-                                                        <linearGradient id="colorAvg" x1="0" y1="0" x2="0" y2="1">
-                                                            <stop offset="0%" stopColor="#9333ea" stopOpacity={0.9} />
-                                                            <stop offset="100%" stopColor="#c084fc" stopOpacity={0.4} />
-                                                        </linearGradient>
-                                                    </defs>
-                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                                    <XAxis dataKey="subject" tick={{ fill: '#64748b', fontWeight: 600 }} axisLine={false} tickLine={false} dy={10} />
-                                                    <YAxis domain={[0, 100]} tick={{ fill: '#64748b', fontWeight: 600 }} axisLine={false} tickLine={false} />
-                                                    <Tooltip cursor={{ fill: '#faf5ff' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontWeight: 600 }} formatter={(value: any) => [`${value}%`, 'Class Avg']} />
-                                                    <Bar dataKey="average" fill="url(#colorAvg)" radius={[8, 8, 0, 0]} animationDuration={1500} />
-                                                </BarChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    )}
-                                </motion.div>
-
-                                {/* Exam Log */}
-                                <motion.div variants={itemVariants} className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 border border-purple-50">
-                                    <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-3">
-                                        <div className="bg-blue-100 p-2 rounded-xl">
-                                            <BookOpen className="w-5 h-5 text-blue-600" />
-                                        </div>
-                                        Global Examination Feed
-                                    </h2>
-                                    {marks.length === 0 ? (
-                                        <div className="text-center py-12 text-slate-400"><p className="font-medium">No records found.</p></div>
-                                    ) : (
-                                        <div className="grid gap-4">
-                                            {marks.slice(0, 8).map(mark => (
-                                                <motion.div whileHover={{ scale: 1.01 }} key={mark.id} className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-white hover:shadow-md transition-all">
-                                                    <div>
-                                                        <div className="flex items-center gap-3 mb-1">
-                                                            <h3 className="font-black text-slate-800 text-lg">{mark.student_name}</h3>
-                                                            <span className="bg-purple-100 text-purple-700 text-[10px] px-2 py-1 rounded-md font-black uppercase tracking-widest">{mark.exam_type}</span>
-                                                        </div>
-                                                        <p className="text-slate-500 font-bold text-sm tracking-wide flex items-center gap-2">
-                                                            {mark.subject}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex justify-between sm:justify-end items-center gap-6 mt-4 sm:mt-0">
-                                                        <div className="text-right">
-                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Score</p>
-                                                            <p className="text-2xl font-black text-slate-800 leading-none">{mark.marks}<span className="text-base text-slate-400">/{mark.total_marks}</span></p>
-                                                        </div>
-                                                        <div className={`px-4 py-2 rounded-xl font-black tracking-widest uppercase text-sm ${mark.grade === 'Good' || mark.grade === 'A' ? 'bg-emerald-100 text-emerald-700' : mark.grade === 'Average' || mark.grade === 'B' ? 'bg-amber-100 text-amber-600' : 'bg-rose-100 text-rose-600'}`}>
-                                                            {mark.grade}
-                                                        </div>
-                                                    </div>
-                                                </motion.div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </motion.div>
-
-                                {/* Homework Log */}
-                                <motion.div variants={itemVariants} className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 border border-purple-50">
-                                    <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-3">
-                                        <div className="bg-sky-100 p-2 rounded-xl">
-                                            <ClipboardList className="w-5 h-5 text-sky-600" />
-                                        </div>
-                                        Class Homework Feed
-                                    </h2>
-                                    {homeworkList.length === 0 ? (
-                                        <div className="text-center py-12 text-slate-400"><p className="font-medium">No homework assignments found.</p></div>
-                                    ) : (
-                                        <div className="grid gap-4">
-                                            {homeworkList.map(hw => (
-                                                <motion.div whileHover={{ scale: 1.01 }} key={hw.id} className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 flex flex-col sm:flex-row sm:items-start justify-between hover:bg-white hover:shadow-md transition-all">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-3 mb-2">
-                                                            <h3 className="font-black text-slate-800 text-lg">{hw.subject}</h3>
-                                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-md">Assigned: {new Date(hw.assigned_date).toLocaleDateString()}</span>
-                                                        </div>
-                                                        <p className="text-slate-600 font-medium text-sm bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                                                            {hw.description}
-                                                        </p>
-                                                    </div>
-                                                    <div className="mt-4 sm:mt-0 sm:ml-6 flex-shrink-0">
-                                                        <div className="text-right">
-                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Due Date</p>
-                                                            <div className="bg-sky-50 text-sky-700 px-3 py-1.5 rounded-lg text-sm font-bold border border-sky-100 inline-block">
-                                                                {new Date(hw.due_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                            {/* Full width Homework Feed */}
+                            <motion.div variants={itemVariants} className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 border border-purple-50">
+                                <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-3">
+                                    <div className="bg-sky-100 p-2 rounded-xl">
+                                        <ClipboardList className="w-5 h-5 text-sky-600" />
+                                    </div>
+                                    Class Homework Feed
+                                </h2>
+                                {homeworkList.length === 0 ? (
+                                    <div className="text-center py-12 text-slate-400"><p className="font-medium">No homework assignments found.</p></div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                        {getGroupedHomework().map(([subject, hws], idx) => (
+                                            <div key={idx} className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm">
+                                                <h3 className="font-black text-slate-800 text-lg mb-4 text-center border-b border-slate-200 pb-2">{subject}</h3>
+                                                <div className="space-y-4">
+                                                    {hws.map(hw => (
+                                                        <motion.div whileHover={{ scale: 1.01 }} key={hw.id} className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 hover:shadow-md transition-all">
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded">Assigned: {new Date(hw.assigned_date).toLocaleDateString()}</span>
+                                                                <span className="text-[10px] font-bold text-sky-700 uppercase tracking-widest bg-sky-100 py-1 px-2 rounded">Due: {new Date(hw.due_date).toLocaleDateString()}</span>
                                                             </div>
-                                                        </div>
-                                                    </div>
-                                                </motion.div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </motion.div>
-                            </div>
+                                                            <p className="text-slate-600 font-medium text-sm leading-relaxed">
+                                                                {hw.description}
+                                                            </p>
+                                                        </motion.div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
 
                         </motion.div>
                     </AnimatePresence>

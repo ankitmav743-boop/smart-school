@@ -393,7 +393,8 @@ export function ParentDashboard() {
                           <th className="p-4">Exam Type</th>
                           <th className="p-4">Score</th>
                           <th className="p-4">Grade</th>
-                          <th className="p-4 pr-8 text-right">Date</th>
+                          <th className="p-4">Date</th>
+                          <th className="p-4 text-center bg-emerald-50">Total</th>
                         </tr>
                       </thead>
                       <motion.tbody variants={containerVariants} initial="hidden" animate="show">
@@ -415,8 +416,13 @@ export function ParentDashboard() {
                                 {mark.grade}
                               </span>
                             </td>
-                            <td className="p-4 pr-8 text-right text-slate-500 font-medium text-sm">
+                            <td className="p-4 text-slate-500 font-medium text-sm">
                               {new Date(mark.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </td>
+                            <td className="p-4 text-center bg-emerald-50">
+                              <span className="font-black text-emerald-700">{mark.marks}</span>
+                              <span className="text-emerald-400 text-xs">/{mark.total_marks}</span>
+                              <span className="ml-1 text-xs font-bold text-emerald-600">({((mark.marks / mark.total_marks) * 100).toFixed(0)}%)</span>
                             </td>
                           </motion.tr>
                         ))}

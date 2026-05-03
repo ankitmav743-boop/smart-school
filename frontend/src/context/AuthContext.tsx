@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { School, Teacher, Student } from '../lib/types';
+import { getSchools } from '../lib/api';
 
 type UserType = 'principal' | 'school' | 'teacher' | 'parent';
 
 type AuthContextType = {
   userType: UserType | null;
-  school: School | null;
+  school: School;
   availableSchools: School[];
   principal: School | null;
   teacher: Teacher | null;
@@ -16,8 +17,6 @@ type AuthContextType = {
   loginAsParent: (student: Student, school: School) => void;
   logout: () => void;
 };
-
-import { getSchools } from '../lib/api';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -38,16 +37,22 @@ function parseStoredValue<T>(key: string): T | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [userType, setUserType] = useState<UserType | null>(null);
-  const [school, setSchoolState] = useState<School | null>(null);
+  const [school, setSchool] = useState<School | null>(null);
   const [availableSchools, setAvailableSchools] = useState<School[]>([]);
   const [principal, setPrincipal] = useState<School | null>(null);
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [student, setStudent] = useState<Student | null>(null);
 
   useEffect(() => {
-    // Fetch all available schools for the dropdown
+    // Fetch schools from database
     getSchools()
-      .then((schools) => setAvailableSchools(schools))
+      .then((schools) => {
+        setAvailableSchools(schools);
+        // Auto-select the first school (Kadiya Churu)
+        if (schools.length > 0 && !school) {
+          setSchool(schools[0]);
+        }
+      })
       .catch((error) => console.error('Failed to load schools', error));
 
     const savedUserType = localStorage.getItem('userType') as UserType | null;
@@ -68,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (savedSchool) {
-      setSchoolState(savedSchool);
+      setSchool(savedSchool);
     }
 
     if (savedTeacher) setTeacher(savedTeacher);
@@ -76,8 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (savedPrincipal) setPrincipal(savedPrincipal);
   }, []);
 
-  const setSchool = (selectedSchool: School | null) => {
-    setSchoolState(selectedSchool);
+  const handleSetSchool = (selectedSchool: School | null) => {
+    setSchool(selectedSchool);
     if (selectedSchool) {
       localStorage.setItem('school', JSON.stringify(selectedSchool));
     } else {
@@ -85,10 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginAsPrincipal = (principalData: School & { token?: string }, school: School) => {
+  const loginAsPrincipal = (principalData: School & { token?: string }, _school: School) => {
     setUserType('principal');
     setPrincipal(principalData);
-    setSchool(school);
     setTeacher(null);
     setStudent(null);
     localStorage.setItem('userType', 'principal');
@@ -98,10 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('student');
   };
 
-  const loginAsTeacher = (teacher: Teacher & { token?: string }, school: School) => {
+  const loginAsTeacher = (teacher: Teacher & { token?: string }, _school: School) => {
     setUserType('teacher');
     setTeacher(teacher);
-    setSchool(school);
     setStudent(null);
     setPrincipal(null);
     localStorage.setItem('userType', 'teacher');
@@ -111,10 +114,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('principal');
   };
 
-  const loginAsParent = (student: Student & { token?: string }, school: School) => {
+  const loginAsParent = (student: Student & { token?: string }, _school: School) => {
     setUserType('parent');
     setStudent(student);
-    setSchool(school);
     setTeacher(null);
     setPrincipal(null);
     localStorage.setItem('userType', 'parent');
@@ -129,25 +131,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTeacher(null);
     setStudent(null);
     setPrincipal(null);
-    setSchool(null);
     localStorage.removeItem('userType');
     localStorage.removeItem('teacher');
     localStorage.removeItem('student');
     localStorage.removeItem('principal');
-    localStorage.removeItem('school');
     localStorage.removeItem('token');
   };
+
+  // While school is loading, show nothing
+  if (!school && availableSchools.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-slate-50 to-blue-100">
+        <div className="animate-spin w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider
       value={{
         userType,
-        school,
+        school: school!,
         availableSchools,
         principal,
         teacher,
         student,
-        setSchool,
+        setSchool: handleSetSchool,
         loginAsPrincipal,
         loginAsTeacher,
         loginAsParent,

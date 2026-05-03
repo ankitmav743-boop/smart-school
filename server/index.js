@@ -769,20 +769,39 @@ async function start() {
     console.warn('Update .env with MYSQL_PASSWORD and run: npm run db:init');
   }
   // --- AUTO-CLEANUP JOB ---
-  // The user requested that 'Today Class Test' marks automatically delete after 2 days.
-  // This runs every 12 hours (43200000 ms) to clean up old class test marks.
+  // Delete 'Today Class Test' and 'Weekly Test' marks after 2 days.
+  // Keep 'First Test', 'Second Test', 'Third Test' permanently.
+  // Runs every 12 hours (43200000 ms).
   setInterval(async () => {
     try {
       const [result] = await pool.query(
-        `DELETE FROM marks 
-       WHERE exam_type = 'Today Class Test' 
-       AND created_at < NOW() - INTERVAL 2 DAY`
+        `DELETE FROM marks
+         WHERE exam_type IN ('Today Class Test', 'Weekly Test')
+         AND created_at < NOW() - INTERVAL 2 DAY`
       );
       if (result.affectedRows > 0) {
-        console.log(`Auto-Cleanup: Deleted ${result.affectedRows} expired 'Today Class Test' records.`);
+        console.log(`Auto-Cleanup: Deleted ${result.affectedRows} expired 'Today Class Test' / 'Weekly Test' records.`);
       }
     } catch (error) {
       console.error('Auto-Cleanup Error:', error);
+    }
+  }, 12 * 60 * 60 * 1000);
+
+  // --- HOMEWORK AUTO-CLEANUP JOB ---
+  // Delete homework records whose due_date has passed by more than 7 days.
+  // This prevents data accumulation while keeping recent homework visible.
+  // Runs every 12 hours.
+  setInterval(async () => {
+    try {
+      const [result] = await pool.query(
+        `DELETE FROM homework
+         WHERE due_date < DATE_SUB(CURDATE(), INTERVAL 7 DAY)`
+      );
+      if (result.affectedRows > 0) {
+        console.log(`Homework Cleanup: Deleted ${result.affectedRows} expired homework records.`);
+      }
+    } catch (error) {
+      console.error('Homework Cleanup Error:', error);
     }
   }, 12 * 60 * 60 * 1000);
 

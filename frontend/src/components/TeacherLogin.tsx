@@ -5,19 +5,14 @@ import { loginTeacher } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
 const SUBJECTS = [
-  'Mathematics',
-  'Science',
-  'Physics',
-  'English',
+  'History',
   'Hindi',
+  'Geography',
+  'Math',
+  'English',
   'Social Science',
-  'Computer Science',
-  'Sanskrit',
   'Physical Education',
-  'Drawing / Art',
-  'General Knowledge',
-  'Moral Science',
-  'Other',
+  'Computer'
 ];
 
 export function TeacherLogin({ onBack }: { onBack: () => void }) {
@@ -41,7 +36,7 @@ export function TeacherLogin({ onBack }: { onBack: () => void }) {
       // API check karega teacherId aur password ko
       const data = await loginTeacher({
         teacherId,
-        schoolId: school!.id,
+        schoolId: school.id,
         password,
         subject,
       });
@@ -54,7 +49,7 @@ export function TeacherLogin({ onBack }: { onBack: () => void }) {
 
       const teacherWithSubject = { ...data, subject };
       await new Promise((res) => setTimeout(res, 600));
-      loginAsTeacher(teacherWithSubject, school!);
+      loginAsTeacher(teacherWithSubject, school);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Login failed. Please try again.';
       setError(errorMsg);
